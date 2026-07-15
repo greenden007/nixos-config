@@ -15,7 +15,7 @@
     };
 
     spotatui = {
-      url = "github:LargeModGames/spotatui";
+      url = "path:./spotatui";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };

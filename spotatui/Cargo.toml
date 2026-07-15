@@ -1,0 +1,212 @@
+[package]
+name = "spotatui"
+description = "A Spotify client for the terminal written in Rust, powered by Ratatui"
+homepage = "https://github.com/LargeModGames/spotatui"
+documentation = "https://github.com/LargeModGames/spotatui"
+repository = "https://github.com/LargeModGames/spotatui"
+keywords = ["spotify", "tui", "cli", "terminal"]
+categories = ["command-line-utilities"]
+version = "0.40.2"
+authors = ["LargeModGames <LargeModGames@gmail.com>"]
+edition = "2021"
+license = "MIT"
+exclude = [
+    ".github/demo.gif",
+    ".github/workflows",
+    ".github/ISSUE_TEMPLATE",
+    "target/",
+    "snap/",
+]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+rspotify = { version = "0.16", default-features = false, features = ["cli", "env-file", "client-reqwest", "reqwest-rustls-tls"] }
+ratatui = { version = "0.30", features = ["crossterm", "layout-cache"], default-features = false }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+serde_yaml = "0.9"
+dirs = "6.0"
+clap = { version = "4.6", features = ["cargo"] }
+clap_complete = "4.6"
+unicode-width = "0.2.2"
+backtrace = "0.3.76"
+crossterm = "0.29"
+tui-equalizer = "0.2.0-alpha"
+tui-bar-graph = "0.3.3"
+colorgrad = "0.8.0"
+tokio = { version = "1.52", features = ["full"] }
+rand = "0.10.2"
+anyhow = "1.0.102"
+chrono = "0.4.45"
+log = "0.4.32"
+fern = "0.7.1"
+open = "5.3"
+self_update = { version = "0.44", features = ["archive-tar", "archive-zip", "compression-flate2", "compression-zip-deflate"], optional = true }
+sha2 = { version = "0.11", optional = true }
+hex = { version = "0.4", optional = true }
+reqwest = { version = "0.12", features = ["json", "rustls-tls", "blocking"], default-features = false }
+openssl = { version = "0.10", optional = true }
+cpal = { version = "0.17", optional = true }
+realfft = { version = "3.4", optional = true }
+discord-rich-presence = { version = "1.1", optional = true }
+ratatui-image = { version = "11.0.4", optional = true, default-features = false, features = ["crossterm"] }
+image = { version = "0.25", optional = true }
+mlua = { version = "0.12", features = ["lua54", "vendored", "serde"], optional = true }
+md-5 = { version = "0.11", optional = true }
+# Subsonic streams each track to a tempfile before playing it through the shared
+# rodio sink. Also a dev-dependency (used by tests across features).
+tempfile = { version = "3", optional = true }
+
+# Internet-radio dependencies: stream-download buffers an infinite HTTP (ICY)
+# stream behind a Read+Seek adapter that rodio can decode without seeking;
+# icy-metadata parses in-band StreamTitle now-playing metadata. Both are only
+# compiled under the opt-in `internet-radio` feature.
+stream-download = { version = "0.24", optional = true, default-features = false, features = ["reqwest-rustls"] }
+icy-metadata = { version = "0.6", optional = true, default-features = false }
+
+# Local-files media source dependencies
+symphonia = { version = "0.6", features = ["mp3", "flac", "ogg", "wav", "aiff", "isomp4", "mkv", "pcm", "vorbis"], optional = true, default-features = false }
+lofty = { version = "0.24", optional = true }
+# Local-files audio output. Defaults pull in cpal `playback` plus the common
+# codecs (flac/mp3/mp4-aac/vorbis/wav) via symphonia. Project-validated on
+# Linux and Windows (librespot uses rodio-backend on both); the macOS output
+# path is gated off in `LocalPlayer` because rodio crashes on CoreAudio/
+# Bluetooth (see the portaudio note above and issues #9/#20).
+rodio = { version = "0.22", optional = true }
+
+# Streaming dependencies (librespot)
+librespot-core = { version = "0.8", optional = true }
+librespot-connect = { version = "0.8", optional = true }
+librespot-oauth = { version = "0.8", optional = true }
+librespot-metadata = { version = "0.8", optional = true }
+librespot-protocol = { version = "0.8", optional = true, default-features = false }
+protobuf = { version = "3.7", optional = true }
+futures = "0.3.32"
+tokio-tungstenite = { version = "0.30", features = ["rustls-tls-webpki-roots"] }
+url = "2.5"
+keepawake = "0.6"
+
+[target.'cfg(all(target_os = "linux", not(target_env = "musl")))'.dependencies]
+arboard = { version = "3.4", features = ["wayland-data-control"] }
+pipewire = { version = "0.10", optional = true }
+librespot-playback = { version = "0.8", optional = true, default-features = false, features = ["alsa-backend"] }
+
+[target.'cfg(all(target_os = "linux", target_env = "musl"))'.dependencies]
+arboard = { version = "3.4", features = ["wayland-data-control"] }
+librespot-playback = { version = "0.8", optional = true, default-features = false, features = ["rodio-backend"] }
+
+[target.'cfg(target_os = "windows")'.dependencies]
+arboard = "3.4"
+# On Windows we default to rodio for audio output.
+# Without this, librespot-playback falls back to the `pipe` sink which writes raw audio bytes
+# to stdout (breaking the TUI and producing no audible output).
+librespot-playback = { version = "0.8", optional = true, default-features = false, features = ["rodio-backend"] }
+smtc-tokio = { version = "0.1.0", optional = true }
+
+# MPRIS D-Bus support (Linux only)
+[target.'cfg(target_os = "linux")'.dependencies]
+mpris-server = { version = "0.10", optional = true }
+
+# macOS: librespot-playback + Now Playing / Media Key support
+# On macOS we use portaudio-backend by default to avoid the pipe sink fallback (which outputs to stdout).
+# Rodio has compatibility issues with macOS CoreAudio and Bluetooth devices (AirPods, etc.)
+# causing SIGSEGV crashes. See Issue #9 and #20.
+[target.'cfg(target_os = "macos")'.dependencies]
+arboard = "3.4"
+librespot-playback = { version = "0.8", optional = true, default-features = false, features = ["portaudio-backend"] }
+objc2-media-player = { version = "0.3", optional = true }
+objc2-foundation = { version = "0.3", optional = true }
+objc2-app-kit = { version = "0.3", optional = true, default-features = false, features = ["NSImage"] }
+objc2 = { version = "0.6", optional = true }
+block2 = { version = "0.6", optional = true }
+
+[features]
+default = ["telemetry", "streaming", "audio-viz-cpal", "macos-media", "discord-rpc", "mpris", "self-update", "windows-media", "scripting"]
+telemetry = []
+self-update = ["dep:self_update", "dep:sha2", "dep:hex"]
+streaming = ["librespot-core", "librespot-playback", "librespot-connect", "librespot-oauth", "librespot-metadata", "librespot-protocol", "protobuf"]
+# Audio backend features
+alsa-backend = ["streaming", "librespot-playback/alsa-backend"]
+pulseaudio-backend = ["streaming", "librespot-playback/pulseaudio-backend"]
+rodio-backend = ["streaming", "librespot-playback/rodio-backend"]
+portaudio-backend = ["streaming", "librespot-playback/portaudio-backend"]
+jackaudio-backend = ["streaming", "librespot-playback/jackaudio-backend"]
+rodiojack-backend = ["streaming", "librespot-playback/rodiojack-backend"]
+sdl-backend = ["streaming", "librespot-playback/sdl-backend"]
+gstreamer-backend = ["streaming", "librespot-playback/gstreamer-backend"]
+audio-viz = ["realfft", "pipewire"]
+audio-viz-cpal = ["realfft", "cpal"]  # Alternative for Windows/macOS or if pipewire issues
+mpris = ["mpris-server"]  # MPRIS D-Bus integration (Linux only)
+macos-media = ["objc2-media-player", "objc2-foundation", "objc2-app-kit", "objc2", "block2", "streaming"]  # macOS Now Playing integration
+windows-media = ["smtc-tokio", "streaming"] # windows SMTC integration
+discord-rpc = ["discord-rich-presence"]
+cover-art = ["ratatui-image", "image"]
+scripting = ["dep:mlua"]
+# Shared audio decode/output engine (rodio bundles symphonia). Pulled by any
+# source that plays decoded audio through the local sink (local files, Subsonic).
+audio-decode = ["dep:rodio"]
+# Convenience alias to pull in every alternative (non-Spotify) source at once,
+# e.g. `cargo run --features all-sources`. Deliberately NOT part of `default`:
+# the release binaries enable these explicitly (see .github/workflows/cd.yml) and
+# adding them to `default` would pull lofty/symphonia/md-5/stream-download into
+# every plain `cargo build`.
+all-sources = ["local-files", "subsonic", "internet-radio", "youtube"]
+local-files = ["audio-decode", "dep:lofty", "dep:symphonia"]
+subsonic = ["dep:md-5", "audio-decode", "dep:tempfile", "reqwest/stream"]
+internet-radio = ["audio-decode", "dep:stream-download", "dep:icy-metadata"]
+# YouTube via an external `yt-dlp` binary (no new crates): search with
+# `--flat-playlist --dump-json`, download the AAC/M4A audio (format 140, which
+# rodio's default `mp4` feature decodes) to a tempfile, play through the shared
+# LocalPlayer. Unofficial-fragile by design — see plan-multi-source.md.
+youtube = ["audio-decode", "dep:tempfile"]
+
+[dev-dependencies]
+tempfile = "3"
+
+# Constraint-only pin (spotatui has no build script): vergen 9.1.0 breaks
+# librespot-core 0.8.0's build script on a fresh resolve (#350). Remove once
+# librespot ships a fix.
+[build-dependencies]
+vergen = { version = ">=9.0.6, <9.1", default-features = false }
+
+[target.'cfg(target_env = "musl")'.dependencies]
+openssl-sys = { version = "0.9", features = ["vendored"] }
+
+[[bin]]
+bench = false
+path = "src/main.rs"
+name = "spotatui"
+
+[profile.release]
+codegen-units = 1  # Better optimization
+lto = true         # Link-time optimization
+opt-level = "s"    # Prioritize small binary size
+strip = true       # Remove debug symbols
+
+[package.metadata.deb]
+maintainer = "LargeModGames <LargeModGames@gmail.com>"
+copyright = "2025, LargeModGames"
+license-file = ["LICENSE", "4"]
+depends = "$auto"
+# The YouTube source shells out to yt-dlp at runtime (ffmpeg improves the
+# downloaded audio container); both are optional — spotatui works without them.
+suggests = "yt-dlp, ffmpeg"
+section = "utils"
+priority = "optional"
+
+# Native streaming fix: librespot 0.8.0 + backport of upstream PR #1722, which falls back
+# to the next CDN URL when one returns a non-206 status. Some Spotify CDN nodes return
+# HTTP 530, which broke native audio entirely; the official client just tries the next URL.
+# Pinned to our maintained fork (spotatui-librespot) until a fixed librespot is published to
+# crates.io. Pinned by immutable `rev` (not a branch) so release builds stay reproducible even
+# as the `spotatui` branch advances. Note: crates.io publishes ignore [patch], so `cargo install`
+# users need the upstream release.
+[patch.crates-io]
+librespot-core     = { git = "https://github.com/LargeModGames/spotatui-librespot", rev = "28bcb231fe26f4db682eb85d1f7ae43aa1a83896" }
+librespot-audio    = { git = "https://github.com/LargeModGames/spotatui-librespot", rev = "28bcb231fe26f4db682eb85d1f7ae43aa1a83896" }
+librespot-playback = { git = "https://github.com/LargeModGames/spotatui-librespot", rev = "28bcb231fe26f4db682eb85d1f7ae43aa1a83896" }
+librespot-connect  = { git = "https://github.com/LargeModGames/spotatui-librespot", rev = "28bcb231fe26f4db682eb85d1f7ae43aa1a83896" }
+librespot-oauth    = { git = "https://github.com/LargeModGames/spotatui-librespot", rev = "28bcb231fe26f4db682eb85d1f7ae43aa1a83896" }
+librespot-metadata = { git = "https://github.com/LargeModGames/spotatui-librespot", rev = "28bcb231fe26f4db682eb85d1f7ae43aa1a83896" }
+librespot-protocol = { git = "https://github.com/LargeModGames/spotatui-librespot", rev = "28bcb231fe26f4db682eb85d1f7ae43aa1a83896" }

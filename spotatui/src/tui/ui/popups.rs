@@ -1,0 +1,1144 @@
+use crate::core::app::{ActiveBlock, AnnouncementLevel, App, DialogContext, PlaylistPickerRow};
+use crate::core::plugin_api::PlayableInfo;
+use crate::core::plugin_api::PopupLine;
+use crate::infra::network::sync::PartyStatus;
+use ratatui::{
+  layout::{Alignment, Constraint, Direction, Layout, Rect},
+  style::{Modifier, Style},
+  text::{Line, Span},
+  widgets::{Block, Borders, Clear, List, ListItem, ListState, Paragraph, Row, Table, Wrap},
+  Frame,
+};
+
+use super::help::get_help_docs;
+
+/// Formatted help rows are static per session except for terminal width and
+/// keybinding changes, so cache them instead of rebuilding ~80 owned Strings
+/// (plus per-cell char-count truncation) on every redraw while help is open.
+struct HelpMenuCache {
+  width: usize,
+  keys: crate::core::user_config::KeyBindings,
+  header: String,
+  rows: Vec<String>,
+}
+
+static HELP_MENU_CACHE: std::sync::OnceLock<std::sync::Mutex<Option<HelpMenuCache>>> =
+  std::sync::OnceLock::new();
+
+fn build_help_rows(app: &App, total_width: usize) -> (String, Vec<String>) {
+  // Create a one-column table to avoid flickering due to non-determinism when
+  // resolving constraints on widths of table columns.
+  // Calculate column widths based on available terminal width
+  let col1_width = (total_width as f32 * 0.40) as usize;
+  let col2_width = (total_width as f32 * 0.30) as usize;
+  let col3_width = total_width.saturating_sub(col1_width + col2_width + 2);
+
+  let truncate = |s: &str, max: usize| -> String {
+    if max == 0 {
+      return String::new();
+    }
+    if s.chars().count() > max {
+      let truncated: String = s.chars().take(max.saturating_sub(1)).collect();
+      format!("{}…", truncated)
+    } else {
+      s.to_string()
+    }
+  };
+
+  let format_row = |r: Vec<String>| -> String {
+    format!(
+      "{:<w1$}  {:<w2$}  {:<w3$}",
+      truncate(&r[0], col1_width),
+      truncate(&r[1], col2_width),
+      truncate(&r[2], col3_width),
+      w1 = col1_width,
+      w2 = col2_width,
+      w3 = col3_width,
+    )
+  };
+
+  let header = ["Description", "Event", "Context"];
+  let header = format_row(header.iter().map(|s| s.to_string()).collect());
+  let rows = get_help_docs(app).into_iter().map(format_row).collect();
+  (header, rows)
+}
+
+pub fn draw_help_menu(f: &mut Frame<'_>, app: &App) {
+  let [area] = f
+    .area()
+    .layout(&Layout::vertical([Constraint::Percentage(100)]).margin(2));
+
+  let total_width = area.width as usize;
+
+  let cache_slot = HELP_MENU_CACHE.get_or_init(|| std::sync::Mutex::new(None));
+  let mut cache = cache_slot.lock().unwrap();
+  let stale = cache
+    .as_ref()
+    .is_none_or(|c| c.width != total_width || c.keys != app.user_config.keys);
+  if stale {
+    let (header, rows) = build_help_rows(app, total_width);
+    *cache = Some(HelpMenuCache {
+      width: total_width,
+      keys: app.user_config.keys.clone(),
+      header,
+      rows,
+    });
+  }
+  let cache = cache.as_ref().expect("help cache populated above");
+
+  let help_menu_style = app.user_config.theme.base_style();
+  let header = &cache.header;
+  let help_docs = &cache.rows[app.help_menu_offset as usize..];
+  // Only the rows that fit the area can render; don't build Rows for the rest.
+  let help_docs = &help_docs[..help_docs.len().min(area.height as usize)];
+
+  let rows = help_docs
+    .iter()
+    .map(|item| Row::new([item.as_str()]).style(help_menu_style));
+
+  let help_menu = Table::new(rows, &[Constraint::Percentage(100)])
+    .header(Row::new([header.as_str()]))
+    .block(
+      Block::default()
+        .borders(Borders::ALL)
+        .style(help_menu_style)
+        .title(Span::styled(
+          "Help (press <Esc> to go back)",
+          help_menu_style,
+        ))
+        .border_style(help_menu_style),
+    )
+    .style(help_menu_style);
+  f.render_widget(help_menu, area);
+}
+
+fn queue_item_line(item: &PlayableInfo) -> String {
+  match item {
+    PlayableInfo::Track(t) => format!("{} - {}", t.name, t.artists.join(", ")),
+    PlayableInfo::Episode(e) => format!("{} - {}", e.name, e.show_name),
+  }
+}
+
+/// Build the dimmed "up next from context" preview rows shown under the native
+/// queue: what resumes once the queue drains. Returns an empty vector when
+/// nothing is suspended and no queued items are pending, so `draw_queue` omits
+/// the section entirely.
+///
+/// The source of truth is [`App::queue_suspended`](crate::core::app::App) when
+/// the queue is draining over a suspended context; otherwise (queued items
+/// pending over a still-playing context) it is that context's own upcoming
+/// tracks. Rows read from the still-alive per-source `*_playback` state.
+fn context_preview_lines(app: &App, max: usize) -> Vec<String> {
+  // Format the upcoming rows of a Subsonic/YouTube `TrackInfo` context list.
+  #[cfg(any(feature = "subsonic", feature = "youtube"))]
+  fn track_rows(
+    tracks: &[crate::core::plugin_api::TrackInfo],
+    start: usize,
+    max: usize,
+  ) -> Vec<String> {
+    tracks
+      .iter()
+      .skip(start)
+      .take(max)
+      .map(|t| format!("{} - {}", t.name, t.artists.join(", ")))
+      .collect()
+  }
+
+  // Local queues are `file://` URIs only (no API metadata), so display the
+  // file name stem for each upcoming track.
+  #[cfg(feature = "local-files")]
+  fn local_rows(uris: &[String], start: usize, max: usize) -> Vec<String> {
+    uris
+      .iter()
+      .skip(start)
+      .take(max)
+      .map(|u| {
+        let trimmed = u.trim_start_matches("file://");
+        std::path::Path::new(trimmed)
+          .file_stem()
+          .and_then(|s| s.to_str())
+          .map(|s| s.to_string())
+          .unwrap_or_else(|| u.clone())
+      })
+      .collect()
+  }
+
+  // The Spotify Web-API mirror's upcoming list (native or external context).
+  let spotify_mirror = |max: usize| -> Vec<String> {
+    app
+      .queue
+      .as_ref()
+      .map(|q| q.queue.iter().take(max).map(queue_item_line).collect())
+      .unwrap_or_default()
+  };
+
+  // 1. A suspended context is authoritative: the queue is draining over it.
+  #[cfg(any(
+    feature = "streaming",
+    feature = "local-files",
+    feature = "subsonic",
+    feature = "youtube",
+    feature = "internet-radio"
+  ))]
+  if let Some(ctx) = app.queue_suspended.as_ref() {
+    use crate::core::queue::SuspendedContext;
+    return match ctx {
+      #[cfg(feature = "streaming")]
+      SuspendedContext::Spotify { .. } => spotify_mirror(max),
+      #[cfg(feature = "local-files")]
+      SuspendedContext::Local { resume_index, .. } => {
+        match (resume_index, app.local_playback.as_ref()) {
+          (Some(i), Some(s)) => local_rows(&s.queue, *i, max),
+          _ => Vec::new(),
+        }
+      }
+      #[cfg(feature = "subsonic")]
+      SuspendedContext::Subsonic { resume_index, .. } => {
+        match (resume_index, app.subsonic_playback.as_ref()) {
+          (Some(i), Some(s)) => track_rows(&s.tracks, *i, max),
+          _ => Vec::new(),
+        }
+      }
+      #[cfg(feature = "youtube")]
+      SuspendedContext::YouTube { resume_index, .. } => {
+        match (resume_index, app.youtube_playback.as_ref()) {
+          (Some(i), Some(s)) => track_rows(&s.tracks, *i, max),
+          _ => Vec::new(),
+        }
+      }
+      #[cfg(feature = "internet-radio")]
+      SuspendedContext::Radio { station } => vec![format!("Resumes: {}", station.name)],
+    };
+  }
+
+  // 2. Queued items pending over a still-playing context: preview what resumes
+  //    after them (the context's upcoming tracks, from the next index on).
+  if !app.native_queue.is_empty() {
+    #[cfg(feature = "local-files")]
+    if let Some(s) = app.local_playback.as_ref() {
+      return local_rows(&s.queue, s.index + 1, max);
+    }
+    #[cfg(feature = "subsonic")]
+    if let Some(s) = app.subsonic_playback.as_ref() {
+      return track_rows(&s.tracks, s.index + 1, max);
+    }
+    #[cfg(feature = "youtube")]
+    if let Some(s) = app.youtube_playback.as_ref() {
+      return track_rows(&s.tracks, s.index + 1, max);
+    }
+    #[cfg(feature = "internet-radio")]
+    if let Some(s) = app.radio_playback.as_ref() {
+      return vec![format!("Resumes: {}", s.station.name)];
+    }
+    return spotify_mirror(max);
+  }
+
+  Vec::new()
+}
+
+pub fn draw_queue(f: &mut Frame<'_>, app: &App) {
+  let [area] = f
+    .area()
+    .layout(&Layout::vertical([Constraint::Percentage(100)]).margin(2));
+
+  let style = app.user_config.theme.base_style();
+  let mut items: Vec<ListItem> = Vec::new();
+
+  // Row 0: "Now playing" header. Prefer the native queue slot's current track;
+  // fall back to the Spotify Web-API mirror (external Connect device) otherwise.
+  let now_text = app
+    .queue_now_display()
+    .or_else(|| {
+      app
+        .queue
+        .as_ref()
+        .and_then(|q| q.currently_playing.as_ref())
+        .map(queue_item_line)
+    })
+    .unwrap_or_else(|| "—".to_string());
+  items.push(
+    ListItem::new(Line::from(vec![
+      Span::styled(
+        "Now playing: ",
+        style.add_modifier(app.user_config.behavior.emphasis(Modifier::BOLD)),
+      ),
+      Span::raw(now_text),
+    ]))
+    .style(style),
+  );
+
+  // The native queue is the selectable list.
+  if app.native_queue.is_empty() {
+    // With an empty native queue, fall back to displaying the legacy Spotify
+    // mirror only when controlling an external Connect device (the queue there
+    // lives Spotify-side). Otherwise show a hint.
+    if app.spotify_external_device_active() {
+      if let Some(q) = app.queue.as_ref() {
+        for item in &q.queue {
+          items.push(ListItem::new(queue_item_line(item)).style(style));
+        }
+      }
+    } else if !app.queue_owns_playback() {
+      // While the queue owns playback the last queued track is the "Now playing"
+      // row above, so an "empty" hint would contradict it — omit it there.
+      items.push(
+        ListItem::new(Span::raw("Queue is empty — press z on a track to add it")).style(style),
+      );
+    }
+  } else {
+    for track in &app.native_queue {
+      let label = crate::core::queue::source_label(crate::core::queue::queue_item_source(
+        track.uri.as_deref().unwrap_or(""),
+      ));
+      let line = format!("{} - {}  [{}]", track.name, track.artists.join(", "), label);
+      items.push(ListItem::new(line).style(style));
+    }
+  }
+
+  // Dimmed, non-selectable preview of what resumes once the queue drains. It is
+  // appended after the selectable native-queue rows; selection stays confined to
+  // those rows (queue_menu.rs counts only `1 + native_queue.len()` rows), so
+  // these extra rows never receive the highlight.
+  let preview = context_preview_lines(app, 5);
+  if !preview.is_empty() {
+    let header_style = Style::default().fg(app.user_config.theme.hint);
+    let row_style = Style::default()
+      .fg(app.user_config.theme.inactive)
+      .add_modifier(Modifier::DIM);
+    items.push(ListItem::new(Span::styled("Up next from context:", header_style)).style(style));
+    for line in preview {
+      items.push(ListItem::new(Span::styled(line, row_style)).style(style));
+    }
+  }
+
+  let mut state = ListState::default();
+  let len = items.len();
+  let selected = if len == 0 {
+    None
+  } else {
+    Some(app.queue_selected_index.min(len.saturating_sub(1)))
+  };
+  state.select(selected);
+  let list = List::new(items)
+    .block(
+      Block::default()
+        .borders(Borders::ALL)
+        .style(style)
+        .title(Span::styled(
+          format!(
+            "Queue  ({} remove · J/K move · Enter play · Esc back)",
+            app.user_config.keys.remove_from_queue
+          ),
+          style,
+        ))
+        .border_style(style),
+    )
+    .style(style)
+    .highlight_style(
+      Style::default()
+        .fg(app.user_config.theme.active)
+        .bg(app.user_config.theme.inactive)
+        .add_modifier(app.user_config.behavior.emphasis(Modifier::BOLD)),
+    )
+    .highlight_symbol(Line::from("▶ ").style(Style::default().fg(app.user_config.theme.active)));
+  f.render_stateful_widget(list, area, &mut state);
+}
+
+pub fn draw_error_screen(f: &mut Frame<'_>, app: &App) {
+  let chunks = Layout::default()
+    .direction(Direction::Vertical)
+    .constraints([Constraint::Percentage(100)])
+    .margin(5)
+    .split(f.area());
+
+  let playing_text = vec![
+    Line::from(vec![
+      Span::raw("Api response: "),
+      Span::styled(
+        &app.api_error,
+        Style::default().fg(app.user_config.theme.error_text),
+      ),
+    ]),
+    Line::from(Span::styled(
+      "If you are trying to play a track, please check that",
+      Style::default().fg(app.user_config.theme.text),
+    )),
+    Line::from(Span::styled(
+      " 1. You have a Spotify Premium Account",
+      Style::default().fg(app.user_config.theme.text),
+    )),
+    Line::from(Span::styled(
+      " 2. Your playback device is active and selected - press `d` to go to device selection menu",
+      Style::default().fg(app.user_config.theme.text),
+    )),
+    Line::from(Span::styled(
+      " 3. If you're using spotifyd as a playback device, your device name must not contain spaces",
+      Style::default().fg(app.user_config.theme.text),
+    )),
+    Line::from(Span::styled("Hint: a playback device must be either an official spotify client or a light weight alternative such as spotifyd",
+        Style::default().fg(app.user_config.theme.hint)
+        ),
+    ),
+    Line::from(
+      Span::styled(
+          "\nPress <Esc> to return",
+          Style::default().fg(app.user_config.theme.inactive),
+      ),
+    )
+  ];
+
+  let playing_paragraph = Paragraph::new(playing_text)
+    .wrap(Wrap { trim: true })
+    .style(app.user_config.theme.base_style())
+    .block(
+      Block::default()
+        .borders(Borders::ALL)
+        .style(app.user_config.theme.base_style())
+        .title(Span::styled(
+          "Error",
+          Style::default().fg(app.user_config.theme.error_border),
+        ))
+        .border_style(Style::default().fg(app.user_config.theme.error_border)),
+    );
+  f.render_widget(playing_paragraph, chunks[0]);
+}
+
+pub fn draw_dialog(f: &mut Frame<'_>, app: &App) {
+  let dialog_context = match app.get_current_route().active_block {
+    ActiveBlock::Dialog(context) => context,
+    _ => return,
+  };
+
+  match dialog_context {
+    DialogContext::PlaylistWindow
+    | DialogContext::PlaylistSearch
+    | DialogContext::YouTubePlaylistWindow => {
+      if let Some(playlist) = app.dialog.as_ref() {
+        let text = vec![
+          Line::from(Span::raw("Are you sure you want to delete the playlist: ")),
+          Line::from(Span::styled(
+            playlist.as_str(),
+            Style::default().add_modifier(app.user_config.behavior.emphasis(Modifier::BOLD)),
+          )),
+          Line::from(Span::raw("?")),
+        ];
+        draw_confirmation_dialog(f, app, "Confirm", text, 45);
+      }
+    }
+    DialogContext::RemoveTrackFromPlaylistConfirm => {
+      if let Some(pending_remove) = app.pending_playlist_track_removal.as_ref() {
+        let text = vec![
+          Line::from(Span::raw("Remove this track from playlist?")),
+          Line::from(Span::styled(
+            format!("Track: {}", pending_remove.track_name),
+            Style::default().add_modifier(app.user_config.behavior.emphasis(Modifier::BOLD)),
+          )),
+          Line::from(Span::styled(
+            format!("Playlist: {}", pending_remove.playlist_name),
+            Style::default().add_modifier(app.user_config.behavior.emphasis(Modifier::BOLD)),
+          )),
+        ];
+        draw_confirmation_dialog(f, app, "Remove Track", text, 60);
+      }
+    }
+    DialogContext::PersistKeybindingFallback => {
+      if let Some(persist) = app.pending_keybinding_persist.as_ref() {
+        let text = vec![
+          Line::from(Span::raw("Ctrl+, is not reported by this terminal stack.")),
+          Line::from(Span::raw("Use fallback shortcut for Open Settings?")),
+          Line::from(Span::styled(
+            format!("Save as: {}", persist.open_settings_key),
+            Style::default().add_modifier(app.user_config.behavior.emphasis(Modifier::BOLD)),
+          )),
+        ];
+        draw_confirmation_dialog(f, app, "Save Shortcut Fallback", text, 66);
+      }
+    }
+    DialogContext::AddTrackToPlaylistPicker => {
+      draw_add_track_to_playlist_picker_dialog(f, app);
+    }
+  }
+}
+
+fn centered_modal_rect(bounds: Rect, requested_width: u16, requested_height: u16) -> Rect {
+  let width = requested_width.min(bounds.width.saturating_sub(2).max(1));
+  let height = requested_height.min(bounds.height.saturating_sub(2).max(1));
+  let left = bounds.x + bounds.width.saturating_sub(width) / 2;
+  let top = bounds.y + bounds.height.saturating_sub(height) / 3;
+  Rect::new(left, top, width, height)
+}
+
+fn draw_confirmation_dialog(
+  f: &mut Frame<'_>,
+  app: &App,
+  title: &str,
+  text: Vec<Line<'_>>,
+  requested_width: u16,
+) {
+  let rect = centered_modal_rect(f.area(), requested_width, 10);
+  f.render_widget(Clear, rect);
+
+  let block = Block::default()
+    .title(Span::styled(
+      title,
+      Style::default()
+        .fg(app.user_config.theme.header)
+        .add_modifier(app.user_config.behavior.emphasis(Modifier::BOLD)),
+    ))
+    .borders(Borders::ALL)
+    .style(app.user_config.theme.base_style())
+    .border_style(Style::default().fg(app.user_config.theme.inactive));
+  f.render_widget(block, rect);
+
+  let vchunks = Layout::default()
+    .direction(Direction::Vertical)
+    .margin(1)
+    .constraints([Constraint::Min(3), Constraint::Length(3)])
+    .split(rect);
+
+  let text = Paragraph::new(text)
+    .wrap(Wrap { trim: true })
+    .style(app.user_config.theme.base_style())
+    .alignment(Alignment::Center);
+  f.render_widget(text, vchunks[0]);
+
+  let hchunks = Layout::default()
+    .direction(Direction::Horizontal)
+    .horizontal_margin(3)
+    .constraints([Constraint::Ratio(1, 2), Constraint::Ratio(1, 2)])
+    .split(vchunks[1]);
+
+  let ok = Paragraph::new(Span::raw("Ok"))
+    .style(Style::default().fg(if app.confirm {
+      app.user_config.theme.hovered
+    } else {
+      app.user_config.theme.inactive
+    }))
+    .alignment(Alignment::Center);
+  f.render_widget(ok, hchunks[0]);
+
+  let cancel = Paragraph::new(Span::raw("Cancel"))
+    .style(Style::default().fg(if app.confirm {
+      app.user_config.theme.inactive
+    } else {
+      app.user_config.theme.hovered
+    }))
+    .alignment(Alignment::Center);
+  f.render_widget(cancel, hchunks[1]);
+}
+
+fn draw_add_track_to_playlist_picker_dialog(f: &mut Frame<'_>, app: &App) {
+  let rect = centered_modal_rect(f.area(), 70, 20);
+  f.render_widget(Clear, rect);
+
+  let block = Block::default()
+    .title(Span::styled(
+      "Add Track To Playlist",
+      Style::default()
+        .fg(app.user_config.theme.header)
+        .add_modifier(app.user_config.behavior.emphasis(Modifier::BOLD)),
+    ))
+    .borders(Borders::ALL)
+    .style(app.user_config.theme.base_style())
+    .border_style(Style::default().fg(app.user_config.theme.inactive));
+  f.render_widget(block, rect);
+
+  let vchunks = Layout::default()
+    .direction(Direction::Vertical)
+    .margin(1)
+    .constraints([
+      Constraint::Length(2),
+      Constraint::Min(3),
+      Constraint::Length(1),
+    ])
+    .split(rect);
+
+  let track_name = app
+    .pending_playlist_track_add
+    .as_ref()
+    .map(|p| p.track_name.as_str())
+    .unwrap_or("Selected track");
+
+  let header = Paragraph::new(Line::from(Span::raw(format!(
+    "Choose a playlist for: {}",
+    track_name
+  ))))
+  .wrap(Wrap { trim: true })
+  .style(app.user_config.theme.base_style());
+  f.render_widget(header, vchunks[0]);
+
+  let mut list_state = ListState::default();
+  // Rows follow the active source: local YouTube playlists under the YouTube
+  // source, editable Spotify playlists plus folder rows otherwise (must stay
+  // in sync with the picker's key handler).
+  let picker_rows = app.playlist_picker_items();
+
+  if picker_rows.is_empty() {
+    let empty_text = Paragraph::new("No editable playlists available")
+      .style(Style::default().fg(app.user_config.theme.inactive))
+      .alignment(Alignment::Center);
+    f.render_widget(empty_text, vchunks[1]);
+  } else {
+    let is_own_playlist = |playlist: &crate::core::plugin_api::PlaylistInfo| -> bool {
+      // Local YouTube playlists carry no owner id — they are always the
+      // user's own (no "(collab)" suffix).
+      playlist.owner_id.is_none()
+        || app
+          .user
+          .as_ref()
+          .is_some_and(|user| Some(user.id.as_str()) == playlist.owner_id.as_deref())
+    };
+    let items: Vec<ListItem> = picker_rows
+      .iter()
+      .map(|row| {
+        let label = match row {
+          // Same folder rendering as the sidebar (ui/library.rs): back rows
+          // ("← name") as-is, other folders with a 📁 prefix.
+          PlaylistPickerRow::Folder(folder) => {
+            if folder.name.starts_with('\u{2190}') {
+              folder.name.clone()
+            } else {
+              format!("\u{1F4C1} {}", folder.name)
+            }
+          }
+          PlaylistPickerRow::Playlist(playlist) => {
+            if is_own_playlist(playlist) {
+              playlist.name.clone()
+            } else {
+              // `owner` is the display name, falling back to the owner id.
+              format!("{} - {} (collab)", playlist.name, playlist.owner)
+            }
+          }
+        };
+        ListItem::new(Span::raw(label))
+      })
+      .collect();
+    let selected = app
+      .playlist_picker_selected_index
+      .min(picker_rows.len() - 1);
+    list_state.select(Some(selected));
+
+    let list = List::new(items)
+      .style(app.user_config.theme.base_style())
+      .highlight_style(Style::default().fg(app.user_config.theme.hovered))
+      .highlight_symbol("▶ ");
+
+    f.render_stateful_widget(list, vchunks[1], &mut list_state);
+  }
+
+  let footer = Paragraph::new(format!(
+    "Enter add/open | q cancel | {}/{} or arrows move | H/M/L jump",
+    app.user_config.keys.move_down, app.user_config.keys.move_up,
+  ))
+  .style(Style::default().fg(app.user_config.theme.inactive))
+  .alignment(Alignment::Center);
+  f.render_widget(footer, vchunks[2]);
+}
+
+pub fn draw_announcement_prompt(f: &mut Frame<'_>, app: &App) {
+  let Some(announcement) = &app.active_announcement else {
+    return;
+  };
+
+  let width = std::cmp::min(f.area().width.saturating_sub(4), 74);
+  let height = std::cmp::min(f.area().height.saturating_sub(4), 16);
+  let rect = f
+    .area()
+    .centered(Constraint::Length(width), Constraint::Length(height));
+
+  f.render_widget(Clear, rect);
+
+  let (level_label, accent_color) = match announcement.level {
+    AnnouncementLevel::Info => ("INFO", app.user_config.theme.active),
+    AnnouncementLevel::Warning => ("WARNING", app.user_config.theme.hint),
+    AnnouncementLevel::Critical => ("CRITICAL", app.user_config.theme.error_text),
+  };
+
+  let mut text = vec![
+    Line::from(Span::styled(
+      format!("{}  {}", level_label, announcement.title),
+      Style::default().add_modifier(app.user_config.behavior.emphasis(Modifier::BOLD)),
+    )),
+    Line::from(""),
+  ];
+
+  for line in announcement.body.lines() {
+    text.push(Line::from(line.to_string()));
+  }
+
+  if let Some(url) = &announcement.url {
+    text.push(Line::from(""));
+    text.push(Line::from(Span::styled(
+      format!("More: {}", url),
+      Style::default().add_modifier(app.user_config.behavior.emphasis(Modifier::ITALIC)),
+    )));
+  }
+
+  text.push(Line::from(""));
+  text.push(Line::from(Span::styled(
+    "[Press ENTER or ESC to dismiss]",
+    Style::default().fg(app.user_config.theme.inactive),
+  )));
+
+  let paragraph = Paragraph::new(text)
+    .style(app.user_config.theme.base_style())
+    .alignment(Alignment::Left)
+    .wrap(Wrap { trim: false })
+    .block(
+      Block::default()
+        .borders(Borders::ALL)
+        .style(app.user_config.theme.base_style())
+        .border_style(Style::default().fg(accent_color))
+        .title(" Announcement "),
+    );
+
+  f.render_widget(paragraph, rect);
+}
+
+pub fn draw_recap_prompt(f: &mut Frame<'_>, app: &App) {
+  let Some(prompt) = &app.recap_prompt else {
+    return;
+  };
+
+  let width = std::cmp::min(f.area().width.saturating_sub(4), 64);
+  let height = 10;
+  let rect = f
+    .area()
+    .centered(Constraint::Length(width), Constraint::Length(height));
+
+  f.render_widget(Clear, rect);
+
+  let text = vec![
+    Line::from(Span::styled(
+      "Your monthly listening recap is ready! 🎉",
+      Style::default()
+        .fg(app.user_config.theme.active)
+        .add_modifier(app.user_config.behavior.emphasis(Modifier::BOLD)),
+    )),
+    Line::from(""),
+    Line::from(format!(
+      "{} listens made it into your 30-day recap.",
+      prompt.listens
+    )),
+    Line::from("Open it in the browser to view and download your share card."),
+    Line::from(""),
+    Line::from(Span::styled(
+      "[ENTER] Open   [ESC] Later   [d] Don't show this again",
+      Style::default().fg(app.user_config.theme.inactive),
+    )),
+  ];
+
+  let paragraph = Paragraph::new(text)
+    .style(app.user_config.theme.base_style())
+    .alignment(Alignment::Center)
+    .wrap(Wrap { trim: false })
+    .block(
+      Block::default()
+        .borders(Borders::ALL)
+        .style(app.user_config.theme.base_style())
+        .border_style(Style::default().fg(app.user_config.theme.active))
+        .title(" Monthly Recap "),
+    );
+
+  f.render_widget(paragraph, rect);
+}
+
+pub fn draw_exit_prompt(f: &mut Frame<'_>, app: &App) {
+  let width = std::cmp::min(f.area().width.saturating_sub(4), 56);
+  let height = 8;
+  let rect = f
+    .area()
+    .centered(Constraint::Length(width), Constraint::Length(height));
+
+  f.render_widget(Clear, rect);
+
+  let text = vec![
+    Line::from(Span::styled(
+      "Exit spotatui?",
+      Style::default().add_modifier(app.user_config.behavior.emphasis(Modifier::BOLD)),
+    )),
+    Line::from(""),
+    Line::from("Press Y for Yes or N for No"),
+    Line::from(Span::styled(
+      "[ENTER = Yes, ESC = No]",
+      Style::default().fg(app.user_config.theme.inactive),
+    )),
+  ];
+
+  let paragraph = Paragraph::new(text)
+    .style(app.user_config.theme.base_style())
+    .alignment(Alignment::Center)
+    .block(
+      Block::default()
+        .borders(Borders::ALL)
+        .style(app.user_config.theme.base_style())
+        .border_style(Style::default().fg(app.user_config.theme.active))
+        .title(" Confirm Exit "),
+    );
+
+  f.render_widget(paragraph, rect);
+}
+
+/// Draw the sort menu popup overlay
+pub fn draw_sort_menu(f: &mut Frame<'_>, app: &App) {
+  if !app.sort_menu_visible {
+    return;
+  }
+
+  let context = match app.sort_context {
+    Some(ctx) => ctx,
+    None => return,
+  };
+
+  let available_fields = context.available_fields();
+  let current_sort = match context {
+    crate::core::sort::SortContext::PlaylistTracks => &app.playlist_sort,
+    crate::core::sort::SortContext::SavedAlbums => &app.album_sort,
+    crate::core::sort::SortContext::SavedArtists => &app.artist_sort,
+    crate::core::sort::SortContext::RecentlyPlayed => &app.recently_played_sort,
+  };
+
+  let width = std::cmp::min(f.area().width.saturating_sub(4), 35);
+  let height = (available_fields.len() + 4) as u16; // +4 for borders/padding
+  let rect = f
+    .area()
+    .centered(Constraint::Length(width), Constraint::Length(height));
+
+  f.render_widget(Clear, rect);
+
+  // Build list items
+  let items: Vec<ListItem> = available_fields
+    .iter()
+    .enumerate()
+    .map(|(i, field)| {
+      let shortcut = field
+        .shortcut()
+        .map(|c| format!(" ({})", c))
+        .unwrap_or_default();
+      let indicator = if *field == current_sort.field {
+        format!(
+          " {}",
+          current_sort.order.indicator_icon(
+            &app.user_config.behavior.sort_ascending_icon,
+            &app.user_config.behavior.sort_descending_icon,
+          )
+        )
+      } else {
+        String::new()
+      };
+      let text = format!("{}{}{}", field.display_name(), shortcut, indicator);
+
+      let style = if i == app.sort_menu_selected {
+        Style::default()
+          .fg(app.user_config.theme.active)
+          .add_modifier(app.user_config.behavior.emphasis(Modifier::BOLD))
+      } else if *field == current_sort.field {
+        Style::default().fg(app.user_config.theme.hovered)
+      } else {
+        Style::default().fg(app.user_config.theme.text)
+      };
+
+      ListItem::new(text).style(style)
+    })
+    .collect();
+
+  let title = match context {
+    crate::core::sort::SortContext::PlaylistTracks => "Sort Tracks",
+    crate::core::sort::SortContext::SavedAlbums => "Sort Albums",
+    crate::core::sort::SortContext::SavedArtists => "Sort Artists",
+    crate::core::sort::SortContext::RecentlyPlayed => "Sort",
+  };
+
+  let list = List::new(items)
+    .block(
+      Block::default()
+        .borders(Borders::ALL)
+        .style(app.user_config.theme.base_style())
+        .border_style(Style::default().fg(app.user_config.theme.active))
+        .title(Span::styled(
+          title,
+          Style::default()
+            .fg(app.user_config.theme.active)
+            .add_modifier(app.user_config.behavior.emphasis(Modifier::BOLD)),
+        )),
+    )
+    .highlight_style(
+      Style::default()
+        .fg(app.user_config.theme.active)
+        .add_modifier(app.user_config.behavior.emphasis(Modifier::BOLD)),
+    )
+    .highlight_symbol(Line::from("▶ ").style(Style::default().fg(app.user_config.theme.active)));
+
+  let mut state = ListState::default();
+  state.select(Some(app.sort_menu_selected));
+
+  f.render_stateful_widget(list, rect, &mut state);
+}
+
+pub fn draw_party(f: &mut Frame<'_>, app: &App) {
+  let [area] = f
+    .area()
+    .layout(&Layout::vertical([Constraint::Percentage(100)]).margin(2));
+
+  let popup_width = 50u16.min(area.width);
+  let popup_height = 16u16.min(area.height);
+  let popup_x = (area.width.saturating_sub(popup_width)) / 2 + area.x;
+  let popup_y = (area.height.saturating_sub(popup_height)) / 2 + area.y;
+  let popup_area = Rect::new(popup_x, popup_y, popup_width, popup_height);
+
+  f.render_widget(Clear, popup_area);
+
+  let style = app.user_config.theme.base_style();
+  let active_style = Style::default()
+    .fg(app.user_config.theme.active)
+    .add_modifier(app.user_config.behavior.emphasis(Modifier::BOLD));
+  let hint_style = Style::default().fg(app.user_config.theme.hint);
+
+  let mut lines: Vec<Line> = Vec::new();
+
+  match &app.party_status {
+    PartyStatus::Disconnected | PartyStatus::Connecting => {
+      if !app.party_input.is_empty() || app.party_input_idx > 0 || !app.party_join_name.is_empty() {
+        let code_str: String = app
+          .party_input
+          .iter()
+          .filter(|c| c.is_alphanumeric())
+          .map(|c| c.to_ascii_uppercase())
+          .collect();
+        let name_str: String = app.party_join_name.iter().collect();
+        let trimmed_name = name_str.trim();
+        lines.push(Line::from(Span::styled(
+          "Enter 6-character party code:",
+          style,
+        )));
+        lines.push(Line::from(""));
+        let display = format!(
+          "  [ {} ]",
+          if code_str.is_empty() {
+            "______".to_string()
+          } else {
+            let mut padded = code_str.clone();
+            while padded.len() < 6 {
+              padded.push('_');
+            }
+            padded
+          }
+        );
+        lines.push(Line::from(Span::styled(display, active_style)));
+        lines.push(Line::from(""));
+
+        let name_display = if name_str.is_empty() {
+          "________________".to_string()
+        } else {
+          name_str.clone()
+        };
+        lines.push(Line::from(Span::styled("Enter your name:", style)));
+        lines.push(Line::from(Span::styled(
+          format!("  [ {} ]", name_display),
+          active_style,
+        )));
+        lines.push(Line::from(""));
+        if code_str.len() == 6 && !trimmed_name.is_empty() {
+          lines.push(Line::from(Span::styled("Press Enter to join", hint_style)));
+        } else if code_str.len() == 6 {
+          lines.push(Line::from(Span::styled(
+            "Type a display name to continue",
+            hint_style,
+          )));
+        } else {
+          let char_count = format!("{}/6 characters", code_str.len());
+          lines.push(Line::from(Span::styled(char_count, hint_style)));
+        }
+        lines.push(Line::from(Span::styled(
+          format!("Name length: {}/32", trimmed_name.chars().count()),
+          hint_style,
+        )));
+        lines.push(Line::from(Span::styled(
+          "Code fills first, then name input",
+          hint_style,
+        )));
+        lines.push(Line::from(Span::styled("Esc to cancel", hint_style)));
+      } else {
+        lines.push(Line::from(Span::styled("Listening Party", active_style)));
+        lines.push(Line::from(""));
+        if app.party_status == PartyStatus::Connecting {
+          lines.push(Line::from(Span::styled("Connecting...", hint_style)));
+        } else {
+          lines.push(Line::from(vec![
+            Span::styled("1 ", active_style),
+            Span::styled("Host a Party", style),
+          ]));
+          lines.push(Line::from(vec![
+            Span::styled("2 ", active_style),
+            Span::styled("Join a Party", style),
+          ]));
+          lines.push(Line::from(""));
+          lines.push(Line::from(Span::styled("Esc to close", hint_style)));
+        }
+      }
+    }
+    PartyStatus::Hosting => {
+      lines.push(Line::from(Span::styled(
+        "Hosting Listening Party",
+        active_style,
+      )));
+      lines.push(Line::from(""));
+      if let Some(session) = &app.party_session {
+        let code_display = if session.code.is_empty() {
+          "Generating...".to_string()
+        } else {
+          session.code.clone()
+        };
+        lines.push(Line::from(vec![
+          Span::styled("Share this code: ", style),
+          Span::styled(code_display, active_style),
+        ]));
+        lines.push(Line::from(""));
+        lines.push(Line::from(vec![
+          Span::styled("Control: ", style),
+          Span::styled(session.control_mode.to_string(), style),
+        ]));
+        lines.push(Line::from(""));
+        if session.guests.is_empty() {
+          lines.push(Line::from(Span::styled(
+            "Waiting for guests...",
+            hint_style,
+          )));
+        } else {
+          let listener_label = if session.guests.len() == 1 {
+            "1 listener:".to_string()
+          } else {
+            format!("{} listeners:", session.guests.len())
+          };
+          lines.push(Line::from(Span::styled(listener_label, style)));
+          for (i, guest) in session.guests.iter().enumerate() {
+            let label = format!("  {}. {}", i + 1, guest);
+            lines.push(Line::from(Span::styled(label, style)));
+          }
+        }
+        lines.push(Line::from(""));
+        lines.push(Line::from(Span::styled(
+          "c - toggle control mode",
+          hint_style,
+        )));
+        lines.push(Line::from(Span::styled("l - leave party", hint_style)));
+        lines.push(Line::from(Span::styled("Esc to close menu", hint_style)));
+      }
+    }
+    PartyStatus::Joined => {
+      lines.push(Line::from(Span::styled(
+        "Listening Party (Guest)",
+        active_style,
+      )));
+      lines.push(Line::from(""));
+      if let Some(session) = &app.party_session {
+        lines.push(Line::from(vec![
+          Span::styled("Host: ", style),
+          Span::styled(&session.host_name, style),
+        ]));
+        lines.push(Line::from(vec![
+          Span::styled("Room: ", style),
+          Span::styled(&session.code, active_style),
+        ]));
+        lines.push(Line::from(vec![
+          Span::styled("Mode: ", style),
+          Span::styled("Following host playback", hint_style),
+        ]));
+        lines.push(Line::from(""));
+        lines.push(Line::from(Span::styled("l - leave party", hint_style)));
+        lines.push(Line::from(Span::styled("Esc to close menu", hint_style)));
+      }
+    }
+  }
+
+  let title = match &app.party_status {
+    PartyStatus::Hosting => "Party (Hosting)",
+    PartyStatus::Joined => "Party (Joined)",
+    _ => "Party",
+  };
+
+  let paragraph = Paragraph::new(lines)
+    .block(
+      Block::default()
+        .borders(Borders::ALL)
+        .style(style)
+        .title(Span::styled(title, active_style))
+        .border_style(Style::default().fg(app.user_config.theme.active)),
+    )
+    .alignment(Alignment::Center)
+    .wrap(Wrap { trim: false });
+
+  f.render_widget(paragraph, popup_area);
+}
+
+/// Draw the plugin popup overlay, if one is active.
+///
+/// Called last in the terminal draw closure so it overlays every screen.
+pub fn draw_plugin_popup(f: &mut Frame<'_>, app: &App) {
+  let popup = match &app.plugin_popup {
+    Some(p) => p,
+    None => return,
+  };
+
+  // Compute width: fit to longest line/title, clamped to 70% of area.
+  let area = f.area();
+  let max_width = (area.width as u32 * 70 / 100).min(u16::MAX as u32) as u16;
+  let content_width = popup
+    .lines
+    .iter()
+    .map(|l| l.text.len() as u16)
+    .chain(std::iter::once(popup.title.len() as u16))
+    .max()
+    .unwrap_or(0)
+    .saturating_add(4); // 2 border + 2 padding
+  let width = content_width.clamp(20, max_width);
+
+  // Height: line count + 2 borders + 1 footer, clamped.
+  let footer_lines = 1u16;
+  let content_height = popup.lines.len() as u16 + 2 + footer_lines;
+  let max_height = area.height.saturating_sub(2).max(3);
+  let height = content_height.clamp(4, max_height);
+
+  let rect = centered_modal_rect(area, width, height);
+  f.render_widget(Clear, rect);
+
+  // Build styled lines.
+  let mut ratatui_lines: Vec<Line> = popup.lines.iter().map(|pl| build_popup_line(pl)).collect();
+
+  // Footer hint.
+  ratatui_lines.push(Line::from(Span::styled(
+    "(Esc to close)",
+    Style::default().fg(app.user_config.theme.hint),
+  )));
+
+  let block = Block::default()
+    .borders(Borders::ALL)
+    .style(app.user_config.theme.base_style())
+    .border_style(Style::default().fg(app.user_config.theme.active))
+    .title(Span::styled(
+      popup.title.clone(),
+      Style::default()
+        .fg(app.user_config.theme.header)
+        .add_modifier(app.user_config.behavior.emphasis(Modifier::BOLD)),
+    ));
+
+  let paragraph = Paragraph::new(ratatui_lines)
+    .block(block)
+    .scroll((app.plugin_popup_scroll, 0));
+
+  f.render_widget(paragraph, rect);
+}
+
+fn build_popup_line<'a>(pl: &'a PopupLine) -> Line<'a> {
+  let mut style = Style::default();
+  if let Some(fg) = pl.fg {
+    style = style.fg(fg);
+  }
+  if pl.bold {
+    style = style.add_modifier(Modifier::BOLD);
+  }
+  if pl.italic {
+    style = style.add_modifier(Modifier::ITALIC);
+  }
+  Line::from(Span::styled(pl.text.clone(), style))
+}

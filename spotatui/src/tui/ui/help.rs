@@ -1,0 +1,418 @@
+use crate::core::app::App;
+
+pub fn get_help_docs(app: &App) -> Vec<Vec<String>> {
+  let key_bindings = &app.user_config.keys;
+  vec![
+    vec![
+      String::from("Scroll down to next result page"),
+      key_bindings.next_page.to_string(),
+      String::from("Pagination"),
+    ],
+    vec![
+      String::from("Scroll up to previous result page"),
+      key_bindings.previous_page.to_string(),
+      String::from("Pagination"),
+    ],
+    vec![
+      String::from("Jump to start of playlist"),
+      key_bindings.jump_to_start.to_string(),
+      String::from("Pagination"),
+    ],
+    vec![
+      String::from("Jump to end of playlist"),
+      key_bindings.jump_to_end.to_string(),
+      String::from("Pagination"),
+    ],
+    vec![
+      String::from("Jump to currently playing album"),
+      key_bindings.jump_to_album.to_string(),
+      String::from("General"),
+    ],
+    vec![
+      String::from("Jump to currently playing artist's album list"),
+      key_bindings.jump_to_artist_album.to_string(),
+      String::from("General"),
+    ],
+    vec![
+      String::from("Jump to current play context"),
+      key_bindings.jump_to_context.to_string(),
+      String::from("General"),
+    ],
+    vec![
+      String::from("Increase volume by 10%"),
+      key_bindings.increase_volume.to_string(),
+      String::from("General"),
+    ],
+    vec![
+      String::from("Decrease volume by 10%"),
+      key_bindings.decrease_volume.to_string(),
+      String::from("General"),
+    ],
+    vec![
+      String::from("Skip to next track"),
+      key_bindings.next_track.to_string(),
+      String::from("General"),
+    ],
+    vec![
+      String::from("Skip to previous track"),
+      key_bindings.previous_track.to_string(),
+      String::from("General"),
+    ],
+    vec![
+      String::from("Force skip to previous track"),
+      key_bindings.force_previous_track.to_string(),
+      String::from("General"),
+    ],
+    vec![
+      String::from("Seek backwards 5 seconds"),
+      key_bindings.seek_backwards.to_string(),
+      String::from("General"),
+    ],
+    vec![
+      String::from("Seek forwards 5 seconds"),
+      key_bindings.seek_forwards.to_string(),
+      String::from("General"),
+    ],
+    vec![
+      String::from("Toggle shuffle"),
+      key_bindings.shuffle.to_string(),
+      String::from("General"),
+    ],
+    vec![
+      String::from("Copy url to currently playing song/episode"),
+      key_bindings.copy_song_url.to_string(),
+      String::from("General"),
+    ],
+    vec![
+      String::from("Copy url to currently playing album/show"),
+      key_bindings.copy_album_url.to_string(),
+      String::from("General"),
+    ],
+    vec![
+      String::from("Cycle repeat mode"),
+      key_bindings.repeat.to_string(),
+      String::from("General"),
+    ],
+    vec![
+      String::from("Move selection left"),
+      format!("{} | <Left Arrow Key> | <Ctrl+b>", key_bindings.move_left),
+      String::from("General"),
+    ],
+    vec![
+      String::from("Move selection down"),
+      format!("{} | <Down Arrow Key> | <Ctrl+n>", key_bindings.move_down),
+      String::from("General"),
+    ],
+    vec![
+      String::from("Move selection up"),
+      format!("{} | <Up Arrow Key> | <Ctrl+p>", key_bindings.move_up),
+      String::from("General"),
+    ],
+    vec![
+      String::from("Move selection right"),
+      format!("{} | <Right Arrow Key> | <Ctrl+f>", key_bindings.move_right),
+      String::from("General (Ctrl+f searches inside playlist track tables)"),
+    ],
+    vec![
+      String::from("Move selection to top of list"),
+      String::from("H"),
+      String::from("General"),
+    ],
+    vec![
+      String::from("Move selection to middle of list"),
+      String::from("M"),
+      String::from("General"),
+    ],
+    vec![
+      String::from("Move selection to bottom of list"),
+      String::from("L"),
+      String::from("General"),
+    ],
+    vec![
+      String::from("Enter input for search"),
+      key_bindings.search.to_string(),
+      String::from("General"),
+    ],
+    vec![
+      String::from("Pause/Resume playback"),
+      key_bindings.toggle_playback.to_string(),
+      String::from("General"),
+    ],
+    vec![
+      String::from("Enter active mode"),
+      String::from("<Enter>"),
+      String::from("General"),
+    ],
+    vec![
+      String::from("Go to audio analysis screen"),
+      key_bindings.audio_analysis.to_string(),
+      String::from("General"),
+    ],
+    vec![
+      String::from("Go to lyrics view"),
+      key_bindings.lyrics_view.to_string(),
+      String::from("General"),
+    ],
+    vec![
+      String::from("Toggle miniplayer view"),
+      key_bindings.miniplayer_view.to_string(),
+      String::from("General"),
+    ],
+    #[cfg(feature = "cover-art")]
+    vec![
+      String::from("Go to cover art view"),
+      key_bindings.cover_art_view.to_string(),
+      String::from("General"),
+    ],
+    vec![
+      String::from("Go back or exit when nowhere left to back to"),
+      key_bindings.back.to_string(),
+      String::from("General"),
+    ],
+    vec![
+      String::from("Switch music source / select playback device"),
+      key_bindings.manage_devices.to_string(),
+      String::from("General"),
+    ],
+    vec![
+      String::from("Open settings"),
+      app.effective_open_settings_key().to_string(),
+      String::from("General"),
+    ],
+    vec![
+      String::from("Save settings"),
+      app.effective_save_settings_key().to_string(),
+      String::from("Settings"),
+    ],
+    vec![
+      String::from("Enter hover mode"),
+      String::from("<Esc>"),
+      String::from("Selected block"),
+    ],
+    vec![
+      String::from("Save track in list or table"),
+      String::from("s"),
+      String::from("Selected block"),
+    ],
+    vec![
+      String::from("Add selected track to playlist"),
+      String::from("w"),
+      String::from("Track table / search songs / artist top tracks / recently played"),
+    ],
+    vec![
+      String::from("Add currently playing track to playlist"),
+      String::from("w"),
+      String::from("Playbar"),
+    ],
+    vec![
+      String::from("Quick-add currently playing track to playlist"),
+      String::from("W"),
+      String::from("Global"),
+    ],
+    vec![
+      String::from("Decrease sidebar width"),
+      String::from("{"),
+      String::from("Layout"),
+    ],
+    vec![
+      String::from("Increase sidebar width"),
+      String::from("}"),
+      String::from("Layout"),
+    ],
+    vec![
+      String::from("Decrease playbar or library height"),
+      String::from("("),
+      String::from("Layout"),
+    ],
+    vec![
+      String::from("Increase playbar or library height"),
+      String::from(")"),
+      String::from("Layout"),
+    ],
+    vec![
+      String::from("Reset layout to defaults"),
+      String::from("|"),
+      String::from("Layout"),
+    ],
+    vec![
+      String::from("Remove selected track from current playlist"),
+      String::from("x"),
+      String::from("Track table (playlist views)"),
+    ],
+    vec![
+      String::from("Search tracks in current playlist"),
+      String::from("<Ctrl+f>"),
+      String::from("Track table (playlist views)"),
+    ],
+    vec![
+      String::from("Clear playlist track search filter"),
+      key_bindings.back.to_string(),
+      String::from("Track table (filtered playlist views)"),
+    ],
+    vec![
+      String::from("Start playback or enter album/artist/playlist"),
+      key_bindings.submit.to_string(),
+      String::from("Selected block"),
+    ],
+    vec![
+      String::from("Play recommendations for song/artist"),
+      String::from("r"),
+      String::from("Selected block"),
+    ],
+    vec![
+      String::from("Play all tracks for artist"),
+      String::from("e"),
+      String::from("Library -> Artists"),
+    ],
+    vec![
+      String::from("Search with input text"),
+      String::from("<Enter>"),
+      String::from("Search input"),
+    ],
+    vec![
+      String::from("Move cursor one space left"),
+      String::from("<Left Arrow Key>"),
+      String::from("Search input"),
+    ],
+    vec![
+      String::from("Move cursor one space right"),
+      String::from("<Right Arrow Key>"),
+      String::from("Search input"),
+    ],
+    vec![
+      String::from("Delete entire input"),
+      String::from("<Ctrl+l>"),
+      String::from("Search input"),
+    ],
+    vec![
+      String::from("Delete text from cursor to start of input"),
+      String::from("<Ctrl+u>"),
+      String::from("Search input"),
+    ],
+    vec![
+      String::from("Delete text from cursor to end of input"),
+      String::from("<Ctrl+k>"),
+      String::from("Search input"),
+    ],
+    vec![
+      String::from("Delete previous word"),
+      String::from("<Ctrl+w>"),
+      String::from("Search input"),
+    ],
+    vec![
+      String::from("Jump to start of input"),
+      String::from("<Ctrl+a>"),
+      String::from("Search input"),
+    ],
+    vec![
+      String::from("Jump to end of input"),
+      String::from("<Ctrl+e>"),
+      String::from("Search input"),
+    ],
+    vec![
+      String::from("Escape from the input back to hovered block"),
+      String::from("<Esc>"),
+      String::from("Search input"),
+    ],
+    vec![
+      String::from("Delete saved album"),
+      String::from("D"),
+      String::from("Library -> Albums"),
+    ],
+    vec![
+      String::from("Delete saved playlist"),
+      String::from("D"),
+      String::from("Playlist"),
+    ],
+    vec![
+      String::from("Remove favorite radio station"),
+      String::from("D"),
+      String::from("Radio"),
+    ],
+    vec![
+      String::from("Follow an artist/playlist"),
+      String::from("w"),
+      String::from("Search result"),
+    ],
+    vec![
+      String::from("Save (like) album to library"),
+      String::from("w"),
+      String::from("Search result"),
+    ],
+    vec![
+      String::from("Play random song in playlist"),
+      String::from("S"),
+      String::from("Selected Playlist"),
+    ],
+    vec![
+      String::from("Toggle sort order of podcast episodes"),
+      String::from("S"),
+      String::from("Selected Show"),
+    ],
+    vec![
+      String::from("Add track to queue"),
+      key_bindings.add_item_to_queue.to_string(),
+      String::from("Hovered over track"),
+    ],
+    vec![
+      String::from("Show queue"),
+      key_bindings.show_queue.to_string(),
+      String::from("General"),
+    ],
+    vec![
+      String::from("Remove selected track from queue"),
+      key_bindings.remove_from_queue.to_string(),
+      String::from("Queue"),
+    ],
+    vec![
+      String::from("Move selected queue item down / up"),
+      String::from("J / K"),
+      String::from("Queue"),
+    ],
+    vec![
+      String::from("Play selected queue item (skip ahead to it)"),
+      String::from("<Enter>"),
+      String::from("Queue"),
+    ],
+    vec![
+      String::from("Toggle saved state for currently playing track/episode"),
+      key_bindings.like_track.to_string(),
+      String::from("General"),
+    ],
+    vec![
+      String::from("Favorite highlighted/playing radio station"),
+      key_bindings.like_track.to_string(),
+      String::from("Radio"),
+    ],
+    vec![
+      String::from("Generate listening recap card (selected period on Stats, 30 days elsewhere)"),
+      key_bindings.generate_recap.to_string(),
+      String::from("General"),
+    ],
+    vec![
+      String::from("Open Stats screen"),
+      String::from("Library sidebar"),
+      String::from("Stats"),
+    ],
+    vec![
+      String::from("Cycle stats period"),
+      String::from("[ / ]"),
+      String::from("Stats"),
+    ],
+    vec![
+      String::from("Play selected top track"),
+      String::from("<Enter>"),
+      String::from("Stats"),
+    ],
+    vec![
+      String::from("Open sort menu"),
+      String::from(","),
+      String::from("Track/Album/Artist list"),
+    ],
+    vec![
+      String::from("Open Listening Party menu"),
+      key_bindings.listening_party.to_string(),
+      String::from("General"),
+    ],
+  ]
+}

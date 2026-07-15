@@ -209,7 +209,6 @@
     tree
     jq           # JSON processing in scripts
     htop
-    iostat       # part of sysstat
     sysstat
   ];
 }

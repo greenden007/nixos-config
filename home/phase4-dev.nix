@@ -5,7 +5,7 @@
   # Installed via nixpkgs jetbrains set; nix-ld in configuration.nix
   # provides the FHS shims they need to run on NixOS.
   home.packages = with pkgs; [
-    jetbrains.pycharm-professional   # Python / ML
+    jetbrains.pycharm   # Python / ML
     jetbrains.clion                  # Rust / C / C++
 
     # ── Rust toolchain ──────────────────────────────────────────────────────
@@ -27,14 +27,14 @@
 
     # ── Dev utilities ────────────────────────────────────────────────────────
     lazygit
-    git-delta     # beautiful git diffs
+    delta     # beautiful git diffs
     gh            # GitHub CLI
     httpie        # human-friendly curl
     docker-compose
 
     # ── LSP / language servers used outside JetBrains (Neovim) ─────────────
     pyright
-    nodePackages.typescript-language-server
+    typescript-language-server
     lua-language-server
     nixd          # Nix LSP — essential for editing your own config
     nil           # alternative Nix LSP

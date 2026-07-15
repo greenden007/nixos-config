@@ -21,7 +21,7 @@
     # ── Wayland utilities ────────────────────────────────────────────────────
     wl-clipboard
     cliphist
-    hyprcapture
+    hyprshot
 
     # ── Misc utilities ───────────────────────────────────────────────────────
     unzip

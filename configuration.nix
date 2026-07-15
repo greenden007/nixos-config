@@ -19,7 +19,7 @@
   boot.kernelPackages = pkgs.linuxPackages_latest;
 
   # ── Networking ────────────────────────────────────────────────────────────
-  networking.hostName = "lockie-nixos";
+  networking.hostName = "nixos";
   networking.networkmanager.enable = true;
 
   # ── Locale & time ─────────────────────────────────────────────────────────
@@ -74,6 +74,8 @@
     pciutils
     usbutils
     lshw
+
+    inputs.spotatui.packages.${pkgs.stdenv.hostPlatform.system}.default
   ];
 
   # ── Audio (PipeWire) ───────────────────────────────────────────────────────
@@ -88,7 +90,7 @@
   # ── Fonts (base — more added in Phase 6) ──────────────────────────────────
   fonts.packages = with pkgs; [
     noto-fonts
-    noto-fonts-emoji
+    noto-fonts-color-emoji
   ];
 
   # ── Polkit (required by Hyprland) ─────────────────────────────────────────

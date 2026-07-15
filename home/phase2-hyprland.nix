@@ -127,8 +127,8 @@
         "$mainMod,C,exec,cliphist list | rofi -dmenu | cliphist decode | wl-copy"
 
         # Screenshot
-        ",Print,exec,hyprcapture"
-        "$mainMod,Print,exec,hyprcapture --region"
+        ",Print,exec,hyprshot"
+        "$mainMod,Print,exec,hyprshot --region"
 
         # Logout menu
         "$mainMod SHIFT,E,exec,wlogout"
@@ -310,7 +310,7 @@
   # ── Rofi ──────────────────────────────────────────────────────────────────
   programs.rofi = {
     enable = true;
-    package = pkgs.rofi-wayland;
+    package = pkgs.rofi;
     terminal = "${pkgs.ghostty}/bin/ghostty";
     theme = "catppuccin-mocha";
     extraConfig = {
@@ -328,7 +328,7 @@
     wlogout
     cliphist
     wl-clipboard
-    hyprcapture
+    hyprshot
     libnotify
   ];
 }

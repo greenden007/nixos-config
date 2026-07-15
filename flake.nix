@@ -13,6 +13,11 @@
       url = "github:hyprwm/Hyprland";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    spotatui = {
+      url = "github:LargeModGames/spotatui";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs = { self, nixpkgs, home-manager, hyprland, ... }@inputs: {

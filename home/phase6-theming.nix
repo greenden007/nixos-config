@@ -6,12 +6,12 @@
 
   home.packages = with pkgs; [
     # Primary coding font
-    (nerdfonts.override { fonts = [ "JetBrainsMono" ]; })
+    nerd-fonts.jetbrains-mono
 
     # UI fonts
     noto-fonts
     noto-fonts-cjk-sans
-    noto-fonts-emoji
+    noto-fonts-color-emoji
     inter             # clean sans-serif for GTK apps
 
     # Theming packages
@@ -22,8 +22,8 @@
 
     # GTK theming tool (replaces gnome-tweaks for non-GNOME setups)
     nwg-look
-    qt6ct             # Qt6 theme configurator
-    kvantum           # Qt theme engine
+    qt6Packages.qt6ct             # Qt6 theme configurator
+    pkgs.kdePackages.qtstyleplugin-kvantum           # Qt theme engine
   ];
 
   # ── GTK theme ─────────────────────────────────────────────────────────────

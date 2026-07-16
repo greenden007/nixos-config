@@ -13,7 +13,20 @@
 
     # ── Gaming / emulation ─────────────────────────────────────────────────
     prismlauncher  # Minecraft launcher; pkgs.minecraft is removed upstream
-    modrinth-app
+    (writeShellApplication {
+      name = "modrinth";
+      runtimeInputs = [ flatpak libnotify ];
+      text = ''
+        set -euo pipefail
+
+        if flatpak info com.modrinth.ModrinthApp >/dev/null 2>&1; then
+          exec flatpak run com.modrinth.ModrinthApp "$@"
+        fi
+
+        notify-send "Modrinth" "Install once with: flatpak install flathub com.modrinth.ModrinthApp"
+        exit 1
+      '';
+    })
     azahar         # Citra-derived Nintendo 3DS emulator
     desmume        # Nintendo DS emulator
 

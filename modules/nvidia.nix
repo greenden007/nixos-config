@@ -33,9 +33,6 @@
     vulkan-tools
   ];
 
-  # Allow unfree packages (NVIDIA driver + CUDA are unfree)
-  nixpkgs.config.allowUnfree = true;
-
   # ── Environment variables for Wayland + NVIDIA ────────────────────────────
   environment.sessionVariables = {
     # Tell Hyprland to use the NVIDIA DRM

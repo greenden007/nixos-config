@@ -139,68 +139,66 @@
   '';
 
   home.file.".local/share/rofi/themes/matugen.rasi".text = ''
-    @import "colors.rasi"
-
     * {
       font: "JetBrainsMono Nerd Font 12";
       background-color: transparent;
-      text-color: @fg-col;
+      text-color: {{colors.on_surface.default.hex}};
     }
     window {
       height: 360px;
       border: 2px;
-      border-color: @border-col;
+      border-color: {{colors.primary.default.hex}};
       border-radius: 8px;
-      background-color: @bg-col;
+      background-color: {{colors.surface.default.hex}};
     }
-    mainbox { background-color: @bg-col; }
+    mainbox { background-color: {{colors.surface.default.hex}}; }
     inputbar {
       children: [prompt, entry];
-      background-color: @bg-col;
+      background-color: {{colors.surface.default.hex}};
       border-radius: 5px;
       padding: 2px;
     }
     prompt {
-      background-color: @blue;
+      background-color: {{colors.primary.default.hex}};
       padding: 6px;
-      text-color: @bg-col;
+      text-color: {{colors.on_primary.default.hex}};
       border-radius: 3px;
       margin: 20px 0px 0px 20px;
     }
     entry {
       padding: 6px;
       margin: 20px 0px 0px 10px;
-      text-color: @fg-col;
-      background-color: @bg-col;
+      text-color: {{colors.on_surface.default.hex}};
+      background-color: {{colors.surface.default.hex}};
     }
     listview {
       border: 0px 0px 0px;
       padding: 6px 0px 0px;
       margin: 10px 0px 0px 20px;
       columns: 2;
-      background-color: @bg-col;
+      background-color: {{colors.surface.default.hex}};
     }
     element {
       padding: 5px;
-      background-color: @bg-col;
-      text-color: @fg-col;
+      background-color: {{colors.surface.default.hex}};
+      text-color: {{colors.on_surface.default.hex}};
     }
     element-icon { size: 25px; }
     element selected {
-      background-color: @selected-col;
-      text-color: @fg-col2;
+      background-color: {{colors.surface_container_high.default.hex}};
+      text-color: {{colors.on_primary.default.hex}};
     }
     mode-switcher { spacing: 0; }
     button {
       padding: 10px;
-      background-color: @bg-col-light;
-      text-color: @grey;
+      background-color: {{colors.surface_container.default.hex}};
+      text-color: {{colors.outline.default.hex}};
       vertical-align: 0.5;
       horizontal-align: 0.5;
     }
     button selected {
-      background-color: @bg-col;
-      text-color: @blue;
+      background-color: {{colors.surface.default.hex}};
+      text-color: {{colors.primary.default.hex}};
     }
   '';
 

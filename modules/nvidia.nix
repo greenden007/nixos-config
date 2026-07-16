@@ -16,12 +16,17 @@
   hardware.graphics = {
     enable = true;
     enable32Bit = true;                  # needed for Steam / 32-bit games
+    extraPackages = with pkgs; [
+      nvidia-vaapi-driver
+    ];
   };
 
   # ── CUDA ──────────────────────────────────────────────────────────────────
   environment.systemPackages = with pkgs; [
     cudatoolkit
+    libva-utils
     nvtopPackages.nvidia
+    vulkan-tools
   ];
 
   # Allow unfree packages (NVIDIA driver + CUDA are unfree)
@@ -31,6 +36,7 @@
   environment.sessionVariables = {
     # Tell Hyprland to use the NVIDIA DRM
     LIBVA_DRIVER_NAME = "nvidia";
+    NVD_BACKEND = "direct";
     XDG_SESSION_TYPE = "wayland";
     GBM_BACKEND = "nvidia-drm";
     __GLX_VENDOR_LIBRARY_NAME = "nvidia";

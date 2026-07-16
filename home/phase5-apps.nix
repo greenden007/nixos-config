@@ -23,7 +23,7 @@
           \( -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png' -o -iname '*.webp' \) \
           | sort | ${rofi}/bin/rofi -dmenu -i -p Wallpaper)"
 
-        [[ -n "${selection:-}" ]] || exit 0
+        [[ -n "$selection" ]] || exit 0
 
         cp "$selection" "$target"
 

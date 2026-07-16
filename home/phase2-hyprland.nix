@@ -137,11 +137,21 @@
         "$mainMod,mouse:273,resizewindow"
       ];
 
-      # Window rules for JetBrains (XWayland)
+      # Window rules
       windowrule = [
-        "match:class ^(jetbrains-.*)$, center 1"
-        "match:class ^(jetbrains-.*)$, size 1800 1100"
-        "match:class ^(jetbrains-.*)$, match:title ^(splash)$, float 1"
+        # Steam/Proton game windows usually expose class steam_app_<appid>.
+        "fullscreen, class:^(steam_app_.*)$"
+        "syncfullscreen, class:^(steam_app_.*)$"
+        "immediate, class:^(steam_app_.*)$"
+        "nomaxsize, class:^(steam_app_.*)$"
+        "fullscreen, class:^(gamescope)$"
+        "syncfullscreen, class:^(gamescope)$"
+        "immediate, class:^(gamescope)$"
+
+        # JetBrains (XWayland)
+        "center 1, class:^(jetbrains-.*)$"
+        "size 1800 1100, class:^(jetbrains-.*)$"
+        "float, class:^(jetbrains-.*)$, title:^(splash)$"
       ];
     };
   };

@@ -13,6 +13,8 @@
 
     # ── Gaming / emulation ─────────────────────────────────────────────────
     prismlauncher  # Minecraft launcher; pkgs.minecraft is removed upstream
+    gamescope
+    mangohud
     (writeShellApplication {
       name = "modrinth";
       runtimeInputs = [ flatpak libnotify ];

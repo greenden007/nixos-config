@@ -139,9 +139,9 @@
 
       # Window rules for JetBrains (XWayland)
       windowrule = [
-        "center,class:^(jetbrains-.*)$"
-        "size 1800 1100,class:^(jetbrains-.*)$"
-        "float,class:^(jetbrains-.*)$,title:^(splash)$"
+        "match:class ^(jetbrains-.*)$, center 1"
+        "match:class ^(jetbrains-.*)$, size 1800 1100"
+        "match:class ^(jetbrains-.*)$, match:title ^(splash)$, float 1"
       ];
     };
   };

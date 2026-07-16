@@ -98,6 +98,7 @@
         "$mainMod,V,togglefloating"
         "$mainMod,Space,exec,rofi -show drun"
         "$mainMod,Tab,exec,rofi -show window"
+        "$mainMod,W,exec,wallpaper-picker"
         "$mainMod,F,fullscreen"
 
         # Move focus with mainMod + arrow keys
@@ -205,17 +206,6 @@
   # ── Mako (notifications) ──────────────────────────────────────────────────
   services.mako = {
     enable = true;
-    settings = {
-      background-color = "#1e1e2e";
-      text-color = "#cdd6f4";
-      border-color = "#cba6f7";
-      border-radius = 8;
-      border-size = 2;
-      default-timeout = 5000;
-      font = "JetBrainsMono Nerd Font 11";
-      padding = "12,16";
-      width = 360;
-    };
   };
 
   # ── Waybar ────────────────────────────────────────────────────────────────
@@ -276,32 +266,6 @@
       tray = { spacing = 8; };
     }];
 
-    style = ''
-      * {
-        font-family: "JetBrainsMono Nerd Font", monospace;
-        font-size: 13px;
-        border: none;
-        border-radius: 0;
-      }
-      window#waybar {
-        background-color: rgba(30, 30, 46, 0.92);
-        color: #cdd6f4;
-      }
-      #workspaces button {
-        padding: 0 8px;
-        color: #6c7086;
-        background: transparent;
-      }
-      #workspaces button.active {
-        color: #cba6f7;
-        border-bottom: 2px solid #cba6f7;
-      }
-      #clock, #cpu, #memory, #temperature, #network, #pulseaudio, #tray {
-        padding: 0 10px;
-        color: #cdd6f4;
-      }
-      #temperature.critical { color: #f38ba8; }
-    '';
   };
 
   # ── Rofi ──────────────────────────────────────────────────────────────────
@@ -309,7 +273,7 @@
     enable = true;
     package = pkgs.rofi;
     terminal = "${pkgs.ghostty}/bin/ghostty";
-    theme = "~/.local/share/rofi/themes/catppuccin-mocha.rasi";
+    theme = "~/.config/rofi/config.rasi";
     extraConfig = {
       modi = "drun,window,run";
       show-icons = true;

@@ -17,6 +17,7 @@
       window-padding-x = 12;
       window-padding-y = 8;
       window-decoration = false;    # Hyprland handles borders
+      background-opacity = 0.88;
       gtk-single-instance = false;
       confirm-close-surface = false;
       copy-on-select = true;
@@ -87,6 +88,12 @@
     };
 
     initExtra = ''
+      # Only pay shell init costs for interactive shells.
+      case $- in
+        *i*) ;;
+        *) return ;;
+      esac
+
       # ── fzf keybindings (Ctrl+R history, Ctrl+T file, Alt+C cd) ──────────
       eval "$(fzf --bash)"
 

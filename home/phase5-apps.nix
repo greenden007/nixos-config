@@ -5,6 +5,34 @@
     # ── Browser ─────────────────────────────────────────────────────────────
     librewolf
 
+    # ── Wallpaper theming ───────────────────────────────────────────────────
+    matugen
+    (writeShellApplication {
+      name = "wallpaper-picker";
+      runtimeInputs = [ findutils rofi coreutils matugen systemd ];
+      text = ''
+        set -euo pipefail
+
+        wallpaper_dir="${WALLPAPER_DIR:-$HOME/Pictures/Wallpapers}"
+        target_dir="$HOME/.config/hypr"
+        target="$target_dir/wallpaper.jpg"
+
+        mkdir -p "$target_dir"
+
+        selection="$(${findutils}/bin/find "$wallpaper_dir" -type f \
+          \( -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png' -o -iname '*.webp' \) \
+          | sort | ${rofi}/bin/rofi -dmenu -i -p Wallpaper)"
+
+        [[ -n "${selection:-}" ]] || exit 0
+
+        cp "$selection" "$target"
+
+        matugen image "$selection" >/dev/null
+
+        systemctl --user try-restart hyprpaper.service >/dev/null 2>&1 || true
+      '';
+    })
+
     # ── Document / media viewers ────────────────────────────────────────────
     nautilus      # file manager used by the Hyprland Super+E binding
     zathura       # keyboard-driven PDF viewer

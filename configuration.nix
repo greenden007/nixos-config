@@ -99,5 +99,12 @@
   # ── Flatpak (for Discord, Spotify) ────────────────────────────────────────
   services.flatpak.enable = true;
 
+  # ── Gaming ───────────────────────────────────────────────────────────────
+  programs.steam = {
+    enable = true;
+    remotePlay.openFirewall = true;
+    dedicatedServer.openFirewall = true;
+  };
+
   system.stateVersion = "24.11";
 }

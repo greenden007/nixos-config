@@ -5,7 +5,11 @@
   programs.ghostty = {
     enable = true;
     settings = {
-      theme = "catppuccin-mocha";
+      background = "1e1e2e";
+      foreground = "cdd6f4";
+      cursor-color = "f5e0dc";
+      selection-background = "45475a";
+      selection-foreground = "cdd6f4";
       font-family = "JetBrainsMono Nerd Font";
       font-size = 13;
       cursor-style = "bar";

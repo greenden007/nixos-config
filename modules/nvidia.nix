@@ -3,6 +3,10 @@
 {
   # ── NVIDIA RTX 5080 ───────────────────────────────────────────────────────
   services.xserver.videoDrivers = [ "nvidia" ];
+  boot.kernelParams = [
+    "nvidia_drm.modeset=1"
+    "nvidia_drm.fbdev=1"
+  ];
 
   hardware.nvidia = {
     modesetting.enable = true;
@@ -40,7 +44,9 @@
     XDG_SESSION_TYPE = "wayland";
     GBM_BACKEND = "nvidia-drm";
     __GLX_VENDOR_LIBRARY_NAME = "nvidia";
-    WLR_NO_HARDWARE_CURSORS = "1";      # fixes invisible cursor on NVIDIA
+    __GL_VRR_ALLOWED = "1";
+    AQ_DRM_DEVICES = "/dev/dri/card1:/dev/dri/card0";
+    WLR_NO_HARDWARE_CURSORS = "1";      # kept for older wlroots-based tools
     # JetBrains: force XWayland rendering
     JETBRAINS_CLIENT_WAYLAND = "0";
   };

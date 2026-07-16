@@ -111,8 +111,12 @@
       # ── bat theme ────────────────────────────────────────────────────────
       export BAT_THEME="Catppuccin Mocha"
 
-      # ── History: share across terminals in real time ──────────────────────
-      PROMPT_COMMAND="history -a; history -c; history -r; $PROMPT_COMMAND"
+      # ── History: share across terminals without reloading the full file ───
+      if [[ -n "$PROMPT_COMMAND" ]]; then
+        PROMPT_COMMAND="history -a; history -n; $PROMPT_COMMAND"
+      else
+        PROMPT_COMMAND="history -a; history -n"
+      fi
 
       # ── Quick edit nixos config ───────────────────────────────────────────
       nixedit() {

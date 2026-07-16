@@ -12,9 +12,9 @@
     modesetting.enable = true;
     powerManagement.enable = false;      # desktop — no need
     powerManagement.finegrained = false;
-    open = false;                        # use proprietary driver (better CUDA support)
+    open = true;                         # newer RTX cards prefer the open kernel module
     nvidiaSettings = true;
-    package = config.boot.kernelPackages.nvidiaPackages.stable;
+    package = config.boot.kernelPackages.nvidiaPackages.latest;
   };
 
   hardware.graphics = {
@@ -45,7 +45,6 @@
     GBM_BACKEND = "nvidia-drm";
     __GLX_VENDOR_LIBRARY_NAME = "nvidia";
     __GL_VRR_ALLOWED = "1";
-    AQ_DRM_DEVICES = "/dev/dri/card1:/dev/dri/card0";
     WLR_NO_HARDWARE_CURSORS = "1";      # kept for older wlroots-based tools
     # JetBrains: force XWayland rendering
     JETBRAINS_CLIENT_WAYLAND = "0";

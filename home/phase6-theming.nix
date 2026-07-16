@@ -44,7 +44,7 @@
 
     [templates.rofi]
     input_path = "${config.home.homeDirectory}/.config/matugen/templates/rofi.rasi"
-    output_path = "${config.home.homeDirectory}/.config/rofi/colors.rasi"
+    output_path = "${config.home.homeDirectory}/.local/share/rofi/themes/matugen.rasi"
 
     [templates.waybar]
     input_path = "${config.home.homeDirectory}/.config/matugen/templates/waybar.css"
@@ -138,15 +138,7 @@
     theme=matugen
   '';
 
-  home.file.".config/gtk-3.0/gtk.css".text = ''
-    @import url("colors.css");
-  '';
-
-  home.file.".config/gtk-4.0/gtk.css".text = ''
-    @import url("colors.css");
-  '';
-
-  home.file.".config/rofi/config.rasi".text = ''
+  home.file.".local/share/rofi/themes/matugen.rasi".text = ''
     @import "colors.rasi"
 
     * {
@@ -309,5 +301,5 @@
       sha256 = "sha256-OVVm8IzrMBuTa5HAd2kO+U9662UbEhVT8gHJnCvUqnc=";
     };
 
-  # Rofi now imports matugen-generated colors.
+  # GTK is kept on the existing theme engine; rofi now uses matugen output.
 }

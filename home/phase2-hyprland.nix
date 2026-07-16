@@ -169,19 +169,49 @@
       background = [{
         monitor = "";
         path = "~/.config/hypr/wallpaper.jpg";
-        blur_passes = 3;
-        blur_size = 7;
+        blur_passes = 4;
+        blur_size = 10;
+        color = "rgba(10, 10, 16, 0.35)";
       }];
+      label = [
+        {
+          monitor = "";
+          text = "$TIME";
+          color = "rgb(cdd6f4)";
+          font_size = 72;
+          font_family = "SF Pro Display";
+          position = "0, 140";
+          halign = "center";
+          valign = "center";
+        }
+        {
+          monitor = "";
+          text = "MacBook Pro";
+          color = "rgba(205, 214, 244, 0.82)";
+          font_size = 18;
+          font_family = "SF Pro Text";
+          position = "0, 86";
+          halign = "center";
+          valign = "center";
+        }
+      ];
       input-field = [{
         monitor = "";
-        size = "300, 50";
-        position = "0, -100";
+        size = "340, 52";
+        position = "0, -20";
         halign = "center";
         valign = "center";
-        outer_color = "rgb(cba6f7)";
-        inner_color = "rgb(1e1e2e)";
+        outer_color = "rgba(255, 255, 255, 0.14)";
+        inner_color = "rgba(255, 255, 255, 0.08)";
         font_color = "rgb(cdd6f4)";
-        placeholder_text = "Password...";
+        outline_thickness = 1;
+        dots_size = 0.28;
+        dots_spacing = 0.35;
+        dots_center = true;
+        fade_on_empty = false;
+        placeholder_text = "Password";
+        hide_input = false;
+        rounding = 20;
       }];
     };
   };
@@ -273,7 +303,7 @@
     enable = true;
     package = pkgs.rofi;
     terminal = "${pkgs.ghostty}/bin/ghostty";
-    theme = "~/.config/rofi/config.rasi";
+    theme = "~/.local/share/rofi/themes/matugen.rasi";
     extraConfig = {
       modi = "drun,window,run";
       show-icons = true;

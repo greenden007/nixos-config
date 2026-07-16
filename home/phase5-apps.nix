@@ -6,6 +6,7 @@
     librewolf
 
     # ── Document / media viewers ────────────────────────────────────────────
+    nautilus      # file manager used by the Hyprland Super+E binding
     zathura       # keyboard-driven PDF viewer
     imv           # lightweight Wayland image viewer
 

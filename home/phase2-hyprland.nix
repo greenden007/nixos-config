@@ -67,7 +67,6 @@
 
       # ── Layout: dwindle (binary space partitioning) ──────────────────
       dwindle = {
-        pseudotile = false;
         preserve_split = true;
       };
 
@@ -99,8 +98,6 @@
         "$mainMod,V,togglefloating"
         "$mainMod,Space,exec,rofi -show drun"
         "$mainMod,Tab,exec,rofi -show window"
-        "$mainMod,P,pseudo"
-        "$mainMod,J,togglesplit"
         "$mainMod,F,fullscreen"
 
         # Move focus with mainMod + arrow keys
@@ -141,7 +138,7 @@
       ];
 
       # Window rules for JetBrains (XWayland)
-      windowrulev2 = [
+      windowrule = [
         "center,class:^(jetbrains-.*)$"
         "size 1800 1100,class:^(jetbrains-.*)$"
         "float,class:^(jetbrains-.*)$,title:^(splash)$"

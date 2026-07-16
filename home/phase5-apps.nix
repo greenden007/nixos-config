@@ -4,7 +4,7 @@
   home.packages = with pkgs; [
     # ── Browser ─────────────────────────────────────────────────────────────
     librewolf
-    firefox
+    firefox-bin
 
     # ── Communication / notes / AI tools ────────────────────────────────────
     claude-code

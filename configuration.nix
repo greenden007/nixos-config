@@ -98,10 +98,6 @@
 
   # ── Flatpak (for Discord, Spotify) ────────────────────────────────────────
   services.flatpak.enable = true;
-  xdg.portal = {
-    enable = true;
-    extraPortals = [ pkgs.xdg-desktop-portal-gtk ];
-  };
 
   system.stateVersion = "24.11";
 }

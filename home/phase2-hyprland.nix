@@ -73,7 +73,6 @@
       # ── Startup apps ────────────────────────────────────────────────────
       exec-once = [
         "waybar"
-        "hyprpaper"
         "hypridle"
         "mako"
         "wl-paste --watch cliphist store"  # clipboard history daemon
@@ -148,14 +147,28 @@
   };
 
   # ── Hyprpaper ─────────────────────────────────────────────────────────────
-  services.hyprpaper = {
-    enable = true;
-    settings = {
-      ipc = "on";
-      splash = false;
-      preload = [ "~/.config/hypr/wallpaper.png" ];
-      wallpaper = [ ",~/.config/hypr/wallpaper.png" ];
+  xdg.configFile."hypr/hyprpaper.conf".text = ''
+    ipc = true
+    splash = false
+
+    wallpaper {
+      monitor =
+      path = ~/.config/hypr/wallpaper.png
+      fit_mode = cover
+    }
+  '';
+
+  systemd.user.services.hyprpaper = {
+    Unit = {
+      Description = "Hyprland wallpaper daemon";
+      PartOf = [ "graphical-session.target" ];
+      After = [ "graphical-session.target" ];
     };
+    Service = {
+      ExecStart = "${pkgs.hyprpaper}/bin/hyprpaper";
+      Restart = "on-failure";
+    };
+    Install.WantedBy = [ "graphical-session.target" ];
   };
 
   # ── Hyprlock ──────────────────────────────────────────────────────────────

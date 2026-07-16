@@ -37,7 +37,7 @@
     matugen
     (writeShellApplication {
       name = "wallpaper-picker";
-      runtimeInputs = [ findutils rofi coreutils matugen systemd libnotify imagemagick ];
+      runtimeInputs = [ findutils rofi coreutils matugen systemd libnotify imagemagick hyprland ];
       text = ''
         set -euo pipefail
 
@@ -66,18 +66,23 @@
 
         [[ -n "$selection" ]] || exit 0
 
-        magick "$selection" "$target"
+        tmp="$target.tmp"
+        magick "$selection" "$tmp"
+        mv "$tmp" "$target"
         printf '%s\n' "$selection" > "$target_dir/wallpaper-current"
 
         matugen image "$target" >/dev/null
 
+        systemctl --user start hyprpaper.service >/dev/null 2>&1 || true
+
         if command -v hyprctl >/dev/null 2>&1; then
-          hyprctl hyprpaper unload all >/dev/null 2>&1 || true
-          hyprctl hyprpaper preload "$target" >/dev/null 2>&1 || true
-          hyprctl hyprpaper wallpaper ",$target" >/dev/null 2>&1 || true
+          hyprctl hyprpaper wallpaper ", $target, cover" >/dev/null 2>&1 || \
+            hyprctl hyprpaper wallpaper ",$target,cover" >/dev/null 2>&1 || \
+            hyprctl hyprpaper wallpaper ",$target" >/dev/null 2>&1 || true
         fi
 
-        systemctl --user try-restart hyprpaper.service waybar.service mako.service >/dev/null 2>&1 || true
+        systemctl --user try-restart waybar.service mako.service >/dev/null 2>&1 || true
+        notify-send "Wallpaper" "$(basename "$selection")"
       '';
     })
     (writeShellApplication {

@@ -309,7 +309,7 @@
     enable = true;
     package = pkgs.rofi;
     terminal = "${pkgs.ghostty}/bin/ghostty";
-    theme = "catppuccin-mocha";
+    theme = "~/.local/share/rofi/themes/catppuccin-mocha.rasi";
     extraConfig = {
       modi = "drun,window,run";
       show-icons = true;

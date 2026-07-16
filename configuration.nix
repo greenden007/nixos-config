@@ -21,6 +21,7 @@
   # ── Networking ────────────────────────────────────────────────────────────
   networking.hostName = "nixos";
   networking.networkmanager.enable = true;
+  services.upower.enable = true;
 
   # ── Locale & time ─────────────────────────────────────────────────────────
   time.timeZone = "America/Chicago";   # Aurora, IL
@@ -60,7 +61,7 @@
   users.users.lockie = {
     isNormalUser = true;
     description = "lockie";
-    extraGroups = [ "networkmanager" "wheel" "video" "input" "audio" ];
+    extraGroups = [ "networkmanager" "wheel" "video" "input" "audio" "docker" ];
     shell = pkgs.bash;
   };
 
@@ -104,6 +105,20 @@
     enable = true;
     remotePlay.openFirewall = true;
     dedicatedServer.openFirewall = true;
+  };
+
+  # ── Containers / local AI ────────────────────────────────────────────────
+  virtualisation.docker = {
+    enable = true;
+    autoPrune = {
+      enable = true;
+      dates = "weekly";
+    };
+  };
+
+  services.ollama = {
+    enable = true;
+    package = pkgs.ollama-cuda;
   };
 
   system.stateVersion = "24.11";

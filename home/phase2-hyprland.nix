@@ -245,12 +245,13 @@
       position = "top";
       height = 36;
       spacing = 4;
-      modules-left  = [ "hyprland/workspaces" "hyprland/window" ];
+      modules-left  = [ "hyprland/workspaces" "hyprland/window" "custom/theme" ];
       modules-center = [ "clock" ];
       modules-right = [
+        "custom/ml-status"
         "cpu" "memory" "temperature"
         "pulseaudio" "network"
-        "battery" "tray"
+        "custom/peripheral-battery" "battery" "tray"
       ];
 
       "hyprland/workspaces" = {
@@ -264,25 +265,30 @@
       };
 
       cpu = {
-        format = " {usage}%";
+        format = "CPU {usage}%";
         interval = 2;
+        on-click = "ghostty -e btop";
       };
 
       memory = {
-        format = " {used:0.1f}G";
+        format = "RAM {used:0.1f}G";
         interval = 5;
+        on-click = "ghostty -e btop";
       };
 
       temperature = {
-        format = " {temperatureC}°C";
+        format = "TEMP {temperatureC}°C";
         critical-threshold = 90;
+        on-click = "ghostty -e btop";
       };
 
       network = {
-        format-wifi = "  {essid}";
+        format-wifi = "NET {essid}";
         format-ethernet = "󰈀 {ipaddr}";
         format-disconnected = "󰖪 Off";
         tooltip-format = "{ifname}: {ipaddr}/{cidr}";
+        on-click = "nm-connection-editor";
+        on-click-right = "ghostty -e nmtui";
       };
 
       pulseaudio = {
@@ -290,6 +296,32 @@
         format-muted = "󰝟 muted";
         format-icons = { default = [ "󰕿" "󰖀" "󰕾" ]; };
         on-click = "pavucontrol";
+      };
+
+      "custom/ml-status" = {
+        exec = "waybar-ml-status";
+        return-type = "json";
+        interval = 2;
+        tooltip = true;
+        on-click = "ghostty -e nvtop";
+        on-click-right = "ml-training-dashboard";
+      };
+
+      "custom/peripheral-battery" = {
+        exec = "waybar-peripheral-battery";
+        return-type = "json";
+        interval = 30;
+        tooltip = true;
+        on-click = "ghostty -e bash -lc 'upower -d; exec bash'";
+      };
+
+      "custom/theme" = {
+        exec = "waybar-theme-status";
+        return-type = "json";
+        interval = 10;
+        tooltip = true;
+        on-click = "wallpaper-picker";
+        on-click-right = "theme-refresh";
       };
 
       tray = { spacing = 8; };

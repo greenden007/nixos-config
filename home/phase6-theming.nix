@@ -268,26 +268,82 @@ EOF
       font-family: "JetBrainsMono Nerd Font", monospace;
       font-size: 13px;
       border: none;
-      border-radius: 0;
+      border-radius: 8px;
+      min-height: 0;
     }
     window#waybar {
-      background-color: alpha(@background, 0.92);
+      background-color: alpha(@background, 0.72);
       color: @foreground;
     }
     #workspaces button {
-      padding: 0 8px;
+      margin: 5px 2px;
+      padding: 0 9px;
       color: shade(@foreground, 0.55);
-      background: transparent;
+      background: alpha(@background-alt, 0.45);
     }
     #workspaces button.active {
-      color: @accent;
-      border-bottom: 2px solid @accent;
+      color: @background;
+      background: @accent;
     }
-    #clock, #cpu, #memory, #temperature, #network, #pulseaudio, #tray {
+    #clock,
+    #cpu,
+    #memory,
+    #temperature,
+    #network,
+    #pulseaudio,
+    #battery,
+    #tray,
+    #custom-theme,
+    #custom-ml-status,
+    #custom-peripheral-battery {
+      margin: 5px 3px;
       padding: 0 10px;
       color: @foreground;
+      background: alpha(@background-alt, 0.62);
+      border: 1px solid alpha(@border, 0.35);
     }
-    #temperature.critical { color: @urgent; }
+    #clock {
+      color: @background;
+      background: @accent;
+      border-color: @accent;
+      font-weight: 700;
+    }
+    #cpu:hover,
+    #memory:hover,
+    #temperature:hover,
+    #network:hover,
+    #pulseaudio:hover,
+    #battery:hover,
+    #custom-theme:hover,
+    #custom-ml-status:hover,
+    #custom-peripheral-battery:hover {
+      background: alpha(@accent, 0.34);
+      border-color: @accent;
+    }
+    #custom-theme {
+      color: @background;
+      background: alpha(@accent, 0.88);
+      border-color: @accent;
+      font-weight: 700;
+    }
+    #custom-ml-status.training {
+      color: @background;
+      background: @accent;
+      border-color: @accent;
+      font-weight: 700;
+    }
+    #custom-peripheral-battery.warning,
+    #battery.warning {
+      color: @background;
+      background: @accent-2;
+    }
+    #custom-peripheral-battery.critical,
+    #battery.critical,
+    #temperature.critical {
+      color: @background;
+      background: @urgent;
+      border-color: @urgent;
+    }
   '';
 
   home.file.".config/mako/config".text = ''

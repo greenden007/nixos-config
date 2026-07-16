@@ -12,8 +12,7 @@
     rustup        # manages stable/nightly, rustfmt, clippy, rust-analyzer
 
     # ── C/C++ toolchain ─────────────────────────────────────────────────────
-    gcc
-    clang
+    gcc           # default C/C++ compiler in the Home Manager profile
     clang-tools   # includes clangd LSP + clang-format
     cmake
     gnumake

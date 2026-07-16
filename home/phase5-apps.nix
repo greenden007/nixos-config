@@ -13,7 +13,7 @@
       text = ''
         set -euo pipefail
 
-        wallpaper_dir="${WALLPAPER_DIR:-$HOME/Pictures/Wallpapers}"
+        wallpaper_dir="''${WALLPAPER_DIR:-$HOME/Pictures/Wallpapers}"
         target_dir="$HOME/.config/hypr"
         target="$target_dir/wallpaper.jpg"
 

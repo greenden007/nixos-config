@@ -80,7 +80,7 @@
       bg-col:           {{colors.surface.default.hex}};
       bg-col-light:     {{colors.surface_container.default.hex}};
       border-col:       {{colors.primary.default.hex}};
-      selected-col:     {{colors.surface_container_high.default.hex}};
+      selected-col:     {{colors.primary.default.hex}};
       blue:             {{colors.primary.default.hex}};
       fg-col:           {{colors.on_surface.default.hex}};
       fg-col2:          {{colors.on_primary.default.hex}};
@@ -150,14 +150,14 @@
     if [ -L "$theme" ]; then
       rm "$theme"
     fi
-    if [ ! -e "$theme" ] || ${pkgs.gnugrep}/bin/grep -q '{{colors' "$theme"; then
+    if [ ! -e "$theme" ] || ${pkgs.gnugrep}/bin/grep -q '{{colors\|selected-col: #45475a' "$theme"; then
       mkdir -p "$(dirname "$theme")"
       cat > "$theme" <<'EOF'
 * {
   bg-col: #1e1e2e;
   bg-col-light: #313244;
   border-col: #cba6f7;
-  selected-col: #45475a;
+  selected-col: #89b4fa;
   blue: #89b4fa;
   fg-col: #cdd6f4;
   fg-col2: #1e1e2e;

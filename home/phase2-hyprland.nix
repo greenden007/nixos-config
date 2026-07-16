@@ -153,8 +153,8 @@
     settings = {
       ipc = "on";
       splash = false;
-      preload = [ "~/.config/hypr/wallpaper.jpg" ];
-      wallpaper = [ ",~/.config/hypr/wallpaper.jpg" ];
+      preload = [ "~/.config/hypr/wallpaper.png" ];
+      wallpaper = [ ",~/.config/hypr/wallpaper.png" ];
     };
   };
 
@@ -168,7 +168,7 @@
       };
       background = [{
         monitor = "";
-        path = "~/.config/hypr/wallpaper.jpg";
+        path = "~/.config/hypr/wallpaper.png";
         blur_passes = 4;
         blur_size = 10;
       }];

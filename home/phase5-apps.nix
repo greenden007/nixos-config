@@ -1,4 +1,4 @@
-{ config, pkgs, ... }:
+{ config, lib, pkgs, ... }:
 
 {
   home.packages = with pkgs; [
@@ -9,13 +9,13 @@
     matugen
     (writeShellApplication {
       name = "wallpaper-picker";
-      runtimeInputs = [ findutils rofi coreutils matugen systemd libnotify ];
+      runtimeInputs = [ findutils rofi coreutils matugen systemd libnotify imagemagick ];
       text = ''
         set -euo pipefail
 
         wallpaper_dir="''${WALLPAPER_DIR:-$HOME/Pictures/Wallpapers}"
         target_dir="$HOME/.config/hypr"
-        target="$target_dir/wallpaper.jpg"
+        target="$target_dir/wallpaper.png"
 
         mkdir -p "$target_dir"
 
@@ -25,18 +25,27 @@
           exit 1
         fi
 
-        selection="$(${findutils}/bin/find "$wallpaper_dir" -type f \
+        images="$(${findutils}/bin/find "$wallpaper_dir" -type f \
           \( -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png' -o -iname '*.webp' \) \
-          | sort | ${rofi}/bin/rofi -dmenu -i -p Wallpaper || true)"
+          | sort)"
+
+        if [[ -z "$images" ]]; then
+          notify-send "Wallpaper picker" "No images found in $wallpaper_dir"
+          exit 1
+        fi
+
+        selection="$(printf '%s\n' "$images" | ${rofi}/bin/rofi -dmenu -i -p Wallpaper || true)"
 
         [[ -n "$selection" ]] || exit 0
 
-        cp "$selection" "$target"
+        magick "$selection" "$target"
 
         matugen image "$target" >/dev/null
 
         if command -v hyprctl >/dev/null 2>&1; then
-          hyprctl hyprpaper reload ",$target" >/dev/null 2>&1 || true
+          hyprctl hyprpaper unload all >/dev/null 2>&1 || true
+          hyprctl hyprpaper preload "$target" >/dev/null 2>&1 || true
+          hyprctl hyprpaper wallpaper ",$target" >/dev/null 2>&1 || true
         fi
 
         systemctl --user try-restart hyprpaper.service waybar.service mako.service >/dev/null 2>&1 || true
@@ -69,6 +78,15 @@
     which
     nmap
   ];
+
+  home.activation.ensureHyprWallpaperPng = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    target="$HOME/.config/hypr/wallpaper.png"
+    fallback="$HOME/.config/hypr/wallpaper.jpg"
+    if [ ! -e "$target" ] && [ -e "$fallback" ]; then
+      mkdir -p "$(dirname "$target")"
+      ${pkgs.imagemagick}/bin/magick "$fallback" "$target"
+    fi
+  '';
 
   # ── Zathura config ────────────────────────────────────────────────────────
   programs.zathura = {

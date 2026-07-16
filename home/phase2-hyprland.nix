@@ -140,18 +140,18 @@
       # Window rules
       windowrule = [
         # Steam/Proton game windows usually expose class steam_app_<appid>.
-        "fullscreen 1, class:^(steam_app_.*)$"
-        "syncfullscreen 1, class:^(steam_app_.*)$"
-        "immediate 1, class:^(steam_app_.*)$"
-        "nomaxsize 1, class:^(steam_app_.*)$"
-        "fullscreen 1, class:^(gamescope)$"
-        "syncfullscreen 1, class:^(gamescope)$"
-        "immediate 1, class:^(gamescope)$"
+        "fullscreen on, match:class ^(steam_app_.*)$"
+        "sync_fullscreen on, match:class ^(steam_app_.*)$"
+        "immediate on, match:class ^(steam_app_.*)$"
+        "no_max_size on, match:class ^(steam_app_.*)$"
+        "fullscreen on, match:class ^(gamescope)$"
+        "sync_fullscreen on, match:class ^(gamescope)$"
+        "immediate on, match:class ^(gamescope)$"
 
         # JetBrains (XWayland)
-        "center 1, class:^(jetbrains-.*)$"
-        "size 1800 1100, class:^(jetbrains-.*)$"
-        "float, class:^(jetbrains-.*)$, title:^(splash)$"
+        "center on, match:class ^(jetbrains-.*)$"
+        "size 1800 1100, match:class ^(jetbrains-.*)$"
+        "float on, match:class ^(jetbrains-.*)$, match:title ^(splash)$"
       ];
     };
   };

@@ -87,7 +87,7 @@
   home.file.".config/bat/themes/Catppuccin Mocha.tmTheme".source =
     pkgs.fetchurl {
       url = "https://raw.githubusercontent.com/catppuccin/bat/main/themes/Catppuccin%20Mocha.tmTheme";
-      sha256 = "sha256-qMQNJGZImmjrqzy6K4K0Pv7J3PcfOsRp1OOnlMj8mq0=";
+      sha256 = "sha256-OVVm8IzrMBuTa5HAd2kO+U9662UbEhVT8gHJnCvUqnc=";
     };
 
   # ── Catppuccin rofi theme ─────────────────────────────────────────────────

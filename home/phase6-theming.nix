@@ -1,4 +1,4 @@
-{ config, pkgs, ... }:
+{ config, lib, pkgs, ... }:
 
 {
   # ── Fonts ─────────────────────────────────────────────────────────────────
@@ -87,6 +87,129 @@
       grey:             {{colors.outline.default.hex}};
       width:            600;
     }
+    window {
+      height: 360px;
+      border: 2px;
+      border-color: @border-col;
+      border-radius: 8px;
+      background-color: @bg-col;
+    }
+    mainbox { background-color: @bg-col; }
+    inputbar {
+      children: [prompt, entry];
+      background-color: @bg-col;
+      border-radius: 5px;
+      padding: 2px;
+    }
+    prompt {
+      background-color: @blue;
+      padding: 6px;
+      text-color: @fg-col2;
+      border-radius: 3px;
+      margin: 20px 0px 0px 20px;
+    }
+    entry {
+      padding: 6px;
+      margin: 20px 0px 0px 10px;
+      text-color: @fg-col;
+      background-color: @bg-col;
+    }
+    listview {
+      border: 0px 0px 0px;
+      padding: 6px 0px 0px;
+      margin: 10px 0px 0px 20px;
+      columns: 2;
+      background-color: @bg-col;
+    }
+    element {
+      padding: 5px;
+      background-color: @bg-col;
+      text-color: @fg-col;
+    }
+    element-icon { size: 25px; }
+    element selected {
+      background-color: @selected-col;
+      text-color: @fg-col2;
+    }
+    mode-switcher { spacing: 0; }
+    button {
+      padding: 10px;
+      background-color: @bg-col-light;
+      text-color: @grey;
+      vertical-align: 0.5;
+      horizontal-align: 0.5;
+    }
+    button selected {
+      background-color: @bg-col;
+      text-color: @blue;
+    }
+  '';
+
+  home.activation.ensureRofiMatugenTheme = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    theme="$HOME/.local/share/rofi/themes/matugen.rasi"
+    if [ -L "$theme" ]; then
+      rm "$theme"
+    fi
+    if [ ! -e "$theme" ] || ${pkgs.gnugrep}/bin/grep -q '{{colors' "$theme"; then
+      mkdir -p "$(dirname "$theme")"
+      cat > "$theme" <<'EOF'
+* {
+  bg-col: #1e1e2e;
+  bg-col-light: #313244;
+  border-col: #cba6f7;
+  selected-col: #45475a;
+  blue: #89b4fa;
+  fg-col: #cdd6f4;
+  fg-col2: #1e1e2e;
+  grey: #6c7086;
+  width: 600;
+}
+window {
+  height: 360px;
+  border: 2px;
+  border-color: @border-col;
+  border-radius: 8px;
+  background-color: @bg-col;
+}
+mainbox { background-color: @bg-col; }
+inputbar {
+  children: [prompt, entry];
+  background-color: @bg-col;
+  border-radius: 5px;
+  padding: 2px;
+}
+prompt {
+  background-color: @blue;
+  padding: 6px;
+  text-color: @fg-col2;
+  border-radius: 3px;
+  margin: 20px 0px 0px 20px;
+}
+entry {
+  padding: 6px;
+  margin: 20px 0px 0px 10px;
+  text-color: @fg-col;
+  background-color: @bg-col;
+}
+listview {
+  border: 0px 0px 0px;
+  padding: 6px 0px 0px;
+  margin: 10px 0px 0px 20px;
+  columns: 2;
+  background-color: @bg-col;
+}
+element {
+  padding: 5px;
+  background-color: @bg-col;
+  text-color: @fg-col;
+}
+element-icon { size: 25px; }
+element selected {
+  background-color: @selected-col;
+  text-color: @fg-col2;
+}
+EOF
+    fi
   '';
 
   home.file.".config/matugen/templates/waybar.css".text = ''
@@ -136,68 +259,6 @@
   home.file.".config/Kvantum/kvantum.kvconfig".text = ''
     [General]
     theme=matugen
-  '';
-
-  home.file.".local/share/rofi/themes/matugen.rasi".text = ''
-    * {
-      text-color: {{colors.on_surface.default.hex}};
-    }
-    window {
-      height: 360px;
-      border: 2px;
-      border-color: {{colors.primary.default.hex}};
-      border-radius: 8px;
-      background-color: {{colors.surface.default.hex}};
-    }
-    mainbox { background-color: {{colors.surface.default.hex}}; }
-    inputbar {
-      children: [prompt, entry];
-      background-color: {{colors.surface.default.hex}};
-      border-radius: 5px;
-      padding: 2px;
-    }
-    prompt {
-      background-color: {{colors.primary.default.hex}};
-      padding: 6px;
-      text-color: {{colors.on_primary.default.hex}};
-      border-radius: 3px;
-      margin: 20px 0px 0px 20px;
-    }
-    entry {
-      padding: 6px;
-      margin: 20px 0px 0px 10px;
-      text-color: {{colors.on_surface.default.hex}};
-      background-color: {{colors.surface.default.hex}};
-    }
-    listview {
-      border: 0px 0px 0px;
-      padding: 6px 0px 0px;
-      margin: 10px 0px 0px 20px;
-      columns: 2;
-      background-color: {{colors.surface.default.hex}};
-    }
-    element {
-      padding: 5px;
-      background-color: {{colors.surface.default.hex}};
-      text-color: {{colors.on_surface.default.hex}};
-    }
-    element-icon { size: 25px; }
-    element selected {
-      background-color: {{colors.surface_container_high.default.hex}};
-      text-color: {{colors.on_primary.default.hex}};
-    }
-    mode-switcher { spacing: 0; }
-    button {
-      padding: 10px;
-      background-color: {{colors.surface_container.default.hex}};
-      text-color: {{colors.outline.default.hex}};
-      vertical-align: 0.5;
-      horizontal-align: 0.5;
-    }
-    button selected {
-      background-color: {{colors.surface.default.hex}};
-      text-color: {{colors.primary.default.hex}};
-    }
   '';
 
   home.file.".config/waybar/style.css".text = ''

@@ -9,7 +9,7 @@
     matugen
     (writeShellApplication {
       name = "wallpaper-picker";
-      runtimeInputs = [ findutils rofi coreutils matugen systemd ];
+      runtimeInputs = [ findutils rofi coreutils matugen systemd libnotify ];
       text = ''
         set -euo pipefail
 
@@ -19,17 +19,27 @@
 
         mkdir -p "$target_dir"
 
+        if [[ ! -d "$wallpaper_dir" ]]; then
+          mkdir -p "$wallpaper_dir"
+          notify-send "Wallpaper picker" "Add images to $wallpaper_dir"
+          exit 1
+        fi
+
         selection="$(${findutils}/bin/find "$wallpaper_dir" -type f \
           \( -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png' -o -iname '*.webp' \) \
-          | sort | ${rofi}/bin/rofi -dmenu -i -p Wallpaper)"
+          | sort | ${rofi}/bin/rofi -dmenu -i -p Wallpaper || true)"
 
         [[ -n "$selection" ]] || exit 0
 
         cp "$selection" "$target"
 
-        matugen image "$selection" >/dev/null
+        matugen image "$target" >/dev/null
 
-        systemctl --user try-restart hyprpaper.service >/dev/null 2>&1 || true
+        if command -v hyprctl >/dev/null 2>&1; then
+          hyprctl hyprpaper reload ",$target" >/dev/null 2>&1 || true
+        fi
+
+        systemctl --user try-restart hyprpaper.service waybar.service mako.service >/dev/null 2>&1 || true
       '';
     })
 

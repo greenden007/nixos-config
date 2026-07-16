@@ -49,8 +49,8 @@
           "easeIn,0.7,0,0.84,0"
         ];
         animation = [
-          "windows,1,4,easeOut,slide"
-          "windowsOut,1,3,easeIn,slide"
+          "windows,1,4,easeOut,popin 85%"
+          "windowsOut,1,3,easeIn,popin 85%"
           "fade,1,4,easeOut"
           "workspaces,1,4,easeOut,slide"
         ];

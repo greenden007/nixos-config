@@ -140,7 +140,6 @@
 
   home.file.".local/share/rofi/themes/matugen.rasi".text = ''
     * {
-      font: "JetBrainsMono Nerd Font 12";
       text-color: {{colors.on_surface.default.hex}};
     }
     window {

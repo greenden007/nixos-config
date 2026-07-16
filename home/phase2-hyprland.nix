@@ -171,37 +171,36 @@
         path = "~/.config/hypr/wallpaper.jpg";
         blur_passes = 4;
         blur_size = 10;
-        color = "rgba(10, 10, 16, 0.35)";
       }];
       label = [
         {
           monitor = "";
           text = "$TIME";
           color = "rgb(cdd6f4)";
-          font_size = 72;
+          font_size = 84;
           font_family = "SF Pro Display";
-          position = "0, 140";
+          position = "0, 126";
           halign = "center";
           valign = "center";
         }
         {
           monitor = "";
-          text = "MacBook Pro";
-          color = "rgba(205, 214, 244, 0.82)";
-          font_size = 18;
+          text = "$DAYSUN $DAY, $MONTH $DAY_NUMBER";
+          color = "rgba(205, 214, 244, 0.78)";
+          font_size = 20;
           font_family = "SF Pro Text";
-          position = "0, 86";
+          position = "0, 64";
           halign = "center";
           valign = "center";
         }
       ];
       input-field = [{
         monitor = "";
-        size = "340, 52";
-        position = "0, -20";
+        size = "360, 54";
+        position = "0, -12";
         halign = "center";
         valign = "center";
-        outer_color = "rgba(255, 255, 255, 0.14)";
+        outer_color = "rgba(255, 255, 255, 0.16)";
         inner_color = "rgba(255, 255, 255, 0.08)";
         font_color = "rgb(cdd6f4)";
         outline_thickness = 1;

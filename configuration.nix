@@ -90,6 +90,13 @@
     pulse.enable = true;
   };
 
+  # ── Bluetooth ─────────────────────────────────────────────────────────────
+  hardware.bluetooth = {
+    enable = true;
+    powerOnBoot = true;
+  };
+  services.blueman.enable = true;
+
   # ── Fonts (base — more added in Phase 6) ──────────────────────────────────
   fonts.packages = with pkgs; [
     noto-fonts

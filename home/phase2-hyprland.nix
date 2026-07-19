@@ -42,17 +42,27 @@
       };
 
       # ── Animations ──────────────────────────────────────────────────────
+      # Wider bezier/animation coverage (HyDE-style) but kept on the same
+      # subtle timings/durations you already had — no overshoot or bounce.
       animations = {
         enabled = true;
         bezier = [
           "easeOut,0.16,1,0.3,1"
           "easeIn,0.7,0,0.84,0"
+          "easeInOutCirc,0.85,0,0.15,1"
+          "md3,0.3,0,0.8,0.15"
+          "linear,0,0,1,1"
         ];
         animation = [
           "windows,1,4,easeOut,popin 85%"
           "windowsOut,1,3,easeIn,popin 85%"
+          "windowsMove,1,4,easeOut"
           "fade,1,4,easeOut"
+          "fadeDim,1,4,easeOut"
+          "border,1,6,easeInOutCirc"
+          "layers,1,3,md3,popin 90%"
           "workspaces,1,4,easeOut,slide"
+          "specialWorkspace,1,4,md3,slidevert"
         ];
       };
 
@@ -69,6 +79,15 @@
       dwindle = {
         preserve_split = true;
       };
+
+      # ── Layer blur (rofi launcher + wlogout powermenu) ────────────────
+      layerrule = [
+        "blur, rofi"
+        "ignorezero, rofi"
+        "blur, logout_dialog"
+        "ignorezero, logout_dialog"
+        "blur, waybar"
+      ];
 
       # ── Startup apps ────────────────────────────────────────────────────
       exec-once = [
@@ -216,6 +235,16 @@
           halign = "center";
           valign = "center";
         }
+        {
+          monitor = "";
+          text = "Hi, $USER";
+          color = "rgba(205, 214, 244, 0.9)";
+          font_size = 16;
+          font_family = "SF Pro Text";
+          position = "0, 20";
+          halign = "center";
+          valign = "center";
+        }
       ];
       input-field = [{
         monitor = "";
@@ -223,10 +252,10 @@
         position = "0, -12";
         halign = "center";
         valign = "center";
-        outer_color = "rgba(255, 255, 255, 0.16)";
-        inner_color = "rgba(255, 255, 255, 0.08)";
+        outer_color = "rgb(cba6f7) rgb(89b4fa) 45deg";
+        inner_color = "rgba(30, 30, 46, 0.55)";
         font_color = "rgb(cdd6f4)";
-        outline_thickness = 1;
+        outline_thickness = 2;
         dots_size = 0.28;
         dots_spacing = 0.35;
         dots_center = true;
@@ -268,18 +297,34 @@
       position = "top";
       height = 36;
       spacing = 4;
-      modules-left  = [ "hyprland/workspaces" "hyprland/window" "custom/theme" ];
+      modules-left  = [ "custom/appmenu" "hyprland/workspaces" "hyprland/window" "custom/theme" ];
       modules-center = [ "clock" ];
       modules-right = [
         "custom/ml-status"
         "cpu" "memory" "temperature"
         "pulseaudio" "network"
         "custom/peripheral-battery" "battery" "tray"
+        "custom/power"
       ];
 
+      # App-menu button, far left — HyDE's launcher trigger
+      "custom/appmenu" = {
+        format = "";
+        tooltip = false;
+        on-click = "rofi -show drun";
+      };
+
       "hyprland/workspaces" = {
-        format = "{id}";
+        format = "";
         on-click = "activate";
+        persistent-workspaces = { "*" = [ 1 2 3 4 5 ]; };
+      };
+
+      # Power button, far right — mirrors your existing $mainMod SHIFT E bind
+      "custom/power" = {
+        format = "⏻";
+        tooltip = false;
+        on-click = "wlogout";
       };
 
       clock = {
@@ -369,8 +414,67 @@
   };
 
   # ── wlogout ───────────────────────────────────────────────────────────────
+  # HyDE-style full-screen power menu: six icon buttons, colors pulled from
+  # the same matugen palette as waybar/rofi/mako.
+  programs.wlogout = {
+    enable = true;
+    layout = [
+      { label = "lock";      action = "hyprlock";                text = "Lock";      keybind = "l"; }
+      { label = "logout";    action = "hyprctl dispatch exit";    text = "Logout";    keybind = "e"; }
+      { label = "suspend";   action = "systemctl suspend";        text = "Suspend";   keybind = "u"; }
+      { label = "hibernate"; action = "systemctl hibernate";      text = "Hibernate"; keybind = "h"; }
+      { label = "reboot";    action = "systemctl reboot";         text = "Reboot";    keybind = "r"; }
+      { label = "shutdown";  action = "systemctl poweroff";       text = "Shutdown";  keybind = "s"; }
+    ];
+    style = ''
+      @import "${config.home.homeDirectory}/.config/wlogout/colors.css";
+
+      * {
+        font-family: "JetBrainsMono Nerd Font", monospace;
+        font-size: 14px;
+      }
+      window {
+        background-color: alpha(@background, 0.55);
+      }
+      button {
+        color: @foreground;
+        background-color: alpha(@background-alt, 0.75);
+        border: 2px solid alpha(@border, 0.4);
+        border-radius: 18px;
+        background-repeat: no-repeat;
+        background-position: center 30%;
+        background-size: 22%;
+        margin: 12px;
+        transition: all 0.2s ease-in-out;
+      }
+      button:focus, button:active, button:hover {
+        background-color: alpha(@accent, 0.28);
+        border-color: @accent;
+      }
+      /* Papirus only ships the "actions" category up to 24x24, but these
+         are SVGs so they scale cleanly at any button size via CSS. */
+      #lock {
+        background-image: image(url("${pkgs.papirus-icon-theme}/share/icons/Papirus-Dark/24x24/actions/system-lock-screen.svg"));
+      }
+      #logout {
+        background-image: image(url("${pkgs.papirus-icon-theme}/share/icons/Papirus-Dark/24x24/actions/system-log-out.svg"));
+      }
+      #suspend {
+        background-image: image(url("${pkgs.papirus-icon-theme}/share/icons/Papirus-Dark/24x24/actions/system-suspend.svg"));
+      }
+      #hibernate {
+        background-image: image(url("${pkgs.papirus-icon-theme}/share/icons/Papirus-Dark/24x24/actions/system-suspend-hibernate.svg"));
+      }
+      #reboot {
+        background-image: image(url("${pkgs.papirus-icon-theme}/share/icons/Papirus-Dark/24x24/actions/system-reboot.svg"));
+      }
+      #shutdown {
+        background-image: image(url("${pkgs.papirus-icon-theme}/share/icons/Papirus-Dark/24x24/actions/system-shutdown.svg"));
+      }
+    '';
+  };
+
   home.packages = with pkgs; [
-    wlogout
     cliphist
     wl-clipboard
     hyprshot

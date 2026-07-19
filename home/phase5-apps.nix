@@ -46,6 +46,7 @@
         wallpaper_dir="''${WALLPAPER_DIR:-$HOME/Pictures/Wallpapers}"
         target_dir="$HOME/.config/hypr"
         target="$target_dir/wallpaper.png"
+        theme="$HOME/.local/share/rofi/themes/wallpaper-grid.rasi"
 
         mkdir -p "$target_dir"
 
@@ -64,8 +65,25 @@
           exit 1
         fi
 
-        selection="$(printf '%s\n' "$images" | ${rofi}/bin/rofi -dmenu -i -p Wallpaper || true)"
+        # rofi's icon-dmenu protocol: "Label\0icon\x1f/path/to/thumbnail"
+        # renders each entry as a full-size thumbnail in the grid theme.
+        # Label is the filename (with extension) so matching back is exact.
+        entries="$(printf '%s\n' "$images" | while IFS= read -r img; do
+          printf '%s\0icon\x1f%s\n' "$(basename "$img")" "$img"
+        done)"
 
+        selection_name="$(printf '%s\n' "$entries" \
+          | ${rofi}/bin/rofi -dmenu -show-icons -i -p "Wallpaper" -theme "$theme" || true)"
+
+        [[ -n "$selection_name" ]] || exit 0
+
+        selection=""
+        while IFS= read -r img; do
+          if [[ "$(basename "$img")" == "$selection_name" ]]; then
+            selection="$img"
+            break
+          fi
+        done <<< "$images"
         [[ -n "$selection" ]] || exit 0
 
         tmp="$target.tmp"

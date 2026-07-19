@@ -54,6 +54,10 @@
     input_path = "${config.home.homeDirectory}/.config/matugen/templates/mako"
     output_path = "${config.home.homeDirectory}/.config/mako/mako-colors"
 
+    [templates.wlogout]
+    input_path = "${config.home.homeDirectory}/.config/matugen/templates/wlogout.css"
+    output_path = "${config.home.homeDirectory}/.config/wlogout/colors.css"
+
     [templates.kvantum_kvconfig]
     input_path = "${config.home.homeDirectory}/.config/matugen/templates/kvantum.kvconfig"
     output_path = "${config.home.homeDirectory}/.config/Kvantum/matugen/matugen.kvconfig"
@@ -78,70 +82,84 @@
   home.file.".config/matugen/templates/rofi.rasi".text = ''
     * {
       bg-col:           {{colors.surface.default.hex}};
-      bg-col-light:     {{colors.surface_container.default.hex}};
+      bg-col-alt:       {{colors.surface_container.default.hex}};
       border-col:       {{colors.primary.default.hex}};
       selected-col:     {{colors.primary.default.hex}};
-      blue:             {{colors.primary.default.hex}};
       fg-col:           {{colors.on_surface.default.hex}};
       fg-col2:          {{colors.on_primary.default.hex}};
       grey:             {{colors.outline.default.hex}};
-      width:            600;
     }
     window {
-      height: 360px;
+      width: 900px;
+      height: 560px;
       border: 2px;
       border-color: @border-col;
-      border-radius: 8px;
+      border-radius: 24px;
       background-color: @bg-col;
     }
-    mainbox { background-color: @bg-col; }
+    mainbox {
+      children: [inputbar, listview];
+      background-color: @bg-col;
+      padding: 22px;
+      spacing: 18px;
+    }
     inputbar {
       children: [prompt, entry];
-      background-color: @bg-col;
-      border-radius: 5px;
-      padding: 2px;
+      background-color: @bg-col-alt;
+      border-radius: 14px;
+      padding: 10px 16px;
+      spacing: 10px;
     }
     prompt {
-      background-color: @blue;
-      padding: 6px;
-      text-color: @fg-col2;
-      border-radius: 3px;
-      margin: 20px 0px 0px 20px;
+      background-color: transparent;
+      text-color: @grey;
     }
     entry {
-      padding: 6px;
-      margin: 20px 0px 0px 10px;
+      background-color: transparent;
       text-color: @fg-col;
-      background-color: @bg-col;
+      placeholder: "Search apps…";
+      placeholder-color: @grey;
     }
     listview {
-      border: 0px 0px 0px;
-      padding: 6px 0px 0px;
-      margin: 10px 0px 0px 20px;
-      columns: 2;
+      columns: 6;
+      lines: 4;
+      spacing: 14px;
       background-color: @bg-col;
+      border: 0px;
+      fixed-height: false;
     }
     element {
-      padding: 5px;
+      orientation: vertical;
+      padding: 12px 6px;
+      border-radius: 16px;
       background-color: @bg-col;
-      text-color: @fg-col;
     }
-    element-icon { size: 25px; }
+    element-icon {
+      size: 52px;
+      horizontal-align: 0.5;
+    }
+    element-text {
+      horizontal-align: 0.5;
+      text-color: @fg-col;
+      margin: 6px 0px 0px 0px;
+    }
     element selected {
       background-color: @selected-col;
+    }
+    element selected element-text {
       text-color: @fg-col2;
     }
     mode-switcher { spacing: 0; }
     button {
       padding: 10px;
-      background-color: @bg-col-light;
+      background-color: @bg-col-alt;
       text-color: @grey;
       vertical-align: 0.5;
       horizontal-align: 0.5;
     }
     button selected {
       background-color: @bg-col;
-      text-color: @blue;
+      text-color: @border-col;
     }
   '';
 
@@ -150,66 +168,146 @@
     if [ -L "$theme" ]; then
       rm "$theme"
     fi
-    if [ ! -e "$theme" ] || ${pkgs.gnugrep}/bin/grep -q '{{colors\|selected-col: #45475a' "$theme"; then
+    write_theme=false
+    if [ ! -e "$theme" ]; then
+      write_theme=true
+    elif ${pkgs.gnugrep}/bin/grep -q '{{colors' "$theme"; then
+      write_theme=true
+    elif ! ${pkgs.gnugrep}/bin/grep -q 'columns:' "$theme"; then
+      # Old compact-list fallback from before the grid redesign — replace it.
+      write_theme=true
+    fi
+    if [ "$write_theme" = true ]; then
       mkdir -p "$(dirname "$theme")"
       cat > "$theme" <<'EOF'
 * {
   bg-col: #1e1e2e;
-  bg-col-light: #313244;
+  bg-col-alt: #313244;
   border-col: #cba6f7;
   selected-col: #89b4fa;
-  blue: #89b4fa;
   fg-col: #cdd6f4;
   fg-col2: #1e1e2e;
   grey: #6c7086;
-  width: 600;
 }
 window {
-  height: 360px;
+  width: 900px;
+  height: 560px;
   border: 2px;
   border-color: @border-col;
-  border-radius: 8px;
+  border-radius: 24px;
   background-color: @bg-col;
 }
-mainbox { background-color: @bg-col; }
+mainbox {
+  children: [inputbar, listview];
+  background-color: @bg-col;
+  padding: 22px;
+  spacing: 18px;
+}
 inputbar {
   children: [prompt, entry];
-  background-color: @bg-col;
-  border-radius: 5px;
-  padding: 2px;
+  background-color: @bg-col-alt;
+  border-radius: 14px;
+  padding: 10px 16px;
+  spacing: 10px;
 }
 prompt {
-  background-color: @blue;
-  padding: 6px;
-  text-color: @fg-col2;
-  border-radius: 3px;
-  margin: 20px 0px 0px 20px;
+  background-color: transparent;
+  text-color: @grey;
 }
 entry {
-  padding: 6px;
-  margin: 20px 0px 0px 10px;
+  background-color: transparent;
   text-color: @fg-col;
-  background-color: @bg-col;
+  placeholder: "Search apps…";
+  placeholder-color: @grey;
 }
 listview {
-  border: 0px 0px 0px;
-  padding: 6px 0px 0px;
-  margin: 10px 0px 0px 20px;
-  columns: 2;
+  columns: 6;
+  lines: 4;
+  spacing: 14px;
   background-color: @bg-col;
+  border: 0px;
+  fixed-height: false;
 }
 element {
-  padding: 5px;
+  orientation: vertical;
+  padding: 12px 6px;
+  border-radius: 16px;
   background-color: @bg-col;
+}
+element-icon { size: 52px; horizontal-align: 0.5; }
+element-text {
+  horizontal-align: 0.5;
   text-color: @fg-col;
+  margin: 6px 0px 0px 0px;
 }
-element-icon { size: 25px; }
-element selected {
-  background-color: @selected-col;
-  text-color: @fg-col2;
-}
+element selected { background-color: @selected-col; }
+element selected element-text { text-color: @fg-col2; }
 EOF
     fi
+  '';
+
+  # ── Wallpaper-picker grid theme (thumbnails, not app icons) ────────────────
+  # Not matugen-templated on purpose: it needs to render *before* matugen has
+  # ever run (you use it to pick the very first wallpaper), so it ships with
+  # a fixed dark palette that's restyled to match on the next theme-refresh.
+  home.file.".local/share/rofi/themes/wallpaper-grid.rasi".text = ''
+    * {
+      bg-col: #1e1e2e;
+      bg-col-alt: #313244;
+      border-col: #cba6f7;
+      selected-col: #89b4fa;
+      fg-col: #cdd6f4;
+      grey: #6c7086;
+    }
+    window {
+      width: 1000px;
+      height: 720px;
+      border: 2px;
+      border-color: @border-col;
+      border-radius: 24px;
+      background-color: @bg-col;
+    }
+    mainbox {
+      children: [inputbar, listview];
+      background-color: @bg-col;
+      padding: 22px;
+      spacing: 18px;
+    }
+    inputbar {
+      children: [prompt, entry];
+      background-color: @bg-col-alt;
+      border-radius: 14px;
+      padding: 10px 16px;
+      spacing: 10px;
+    }
+    prompt { background-color: transparent; text-color: @grey; }
+    entry {
+      background-color: transparent;
+      text-color: @fg-col;
+      placeholder: "Search wallpapers…";
+      placeholder-color: @grey;
+    }
+    listview {
+      columns: 4;
+      lines: 2;
+      spacing: 16px;
+      background-color: @bg-col;
+      border: 0px;
+      fixed-height: false;
+    }
+    element {
+      orientation: vertical;
+      padding: 8px;
+      border-radius: 18px;
+      background-color: @bg-col-alt;
+    }
+    element-icon { size: 220px; horizontal-align: 0.5; }
+    element-text {
+      horizontal-align: 0.5;
+      text-color: @fg-col;
+      margin: 6px 0px 0px 0px;
+    }
+    element selected { background-color: @selected-col; border-color: @selected-col; }
   '';
 
   home.file.".config/matugen/templates/waybar.css".text = ''
@@ -226,6 +324,14 @@ EOF
     background-color={{colors.surface.default.hex}}
     text-color={{colors.on_surface.default.hex}}
     border-color={{colors.primary.default.hex}}
+  '';
+
+  home.file.".config/matugen/templates/wlogout.css".text = ''
+    @define-color background {{colors.surface.default.hex}};
+    @define-color background-alt {{colors.surface_container.default.hex}};
+    @define-color foreground {{colors.on_surface.default.hex}};
+    @define-color accent {{colors.primary.default.hex}};
+    @define-color border {{colors.outline.default.hex}};
   '';
 
   home.file.".config/matugen/templates/kvantum.kvconfig".text = ''
@@ -275,16 +381,43 @@ EOF
       background-color: alpha(@background, 0.72);
       color: @foreground;
     }
-    #workspaces button {
-      margin: 5px 2px;
-      padding: 0 9px;
-      color: shade(@foreground, 0.55);
-      background: alpha(@background-alt, 0.45);
-    }
-    #workspaces button.active {
+
+    /* App-menu button — leftmost, opens the rofi grid launcher */
+    #custom-appmenu {
+      margin: 5px 4px 5px 8px;
+      padding: 0 14px;
       color: @background;
       background: @accent;
+      font-size: 15px;
+      font-weight: 700;
     }
+    #custom-appmenu:hover {
+      background: shade(@accent, 1.1);
+    }
+
+    /* Dot-style workspace indicators */
+    #workspaces {
+      margin: 5px 2px;
+      padding: 0 4px;
+      background: alpha(@background-alt, 0.45);
+    }
+    #workspaces button {
+      margin: 0 3px;
+      padding: 0;
+      min-width: 10px;
+      min-height: 10px;
+      border-radius: 999px;
+      color: transparent;
+      background: shade(@foreground, 0.45);
+    }
+    #workspaces button.active {
+      min-width: 22px;
+      background: @accent;
+    }
+    #workspaces button:hover {
+      background: alpha(@accent, 0.7);
+    }
+
     #clock,
     #cpu,
     #memory,
@@ -344,10 +477,65 @@ EOF
       background: @urgent;
       border-color: @urgent;
     }
+    #custom-power {
+      margin: 5px 8px 5px 3px;
+      padding: 0 12px;
+      color: @foreground;
+      background: alpha(@background-alt, 0.62);
+      border: 1px solid alpha(@border, 0.35);
+      font-size: 14px;
+    }
+    #custom-power:hover {
+      color: @background;
+      background: @urgent;
+      border-color: @urgent;
+    }
   '';
 
   home.file.".config/mako/config".text = ''
     include=~/.config/mako/mako-colors
+  '';
+
+  # ── First-boot color fallbacks ───────────────────────────────────────────
+  # waybar/style.css, mako/config, and wlogout's style all @import a
+  # matugen-generated colors file. Those don't exist until you run
+  # wallpaper-picker/theme-refresh at least once, so seed them with the
+  # same static Catppuccin Mocha palette used as the rofi fallback above.
+  # Never overwrites a real matugen output.
+  home.activation.ensureMatugenColorFallbacks = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    ensure_file() {
+      local path="$1"
+      if [ ! -e "$path" ]; then
+        mkdir -p "$(dirname "$path")"
+        cat > "$path"
+      else
+        cat >/dev/null
+      fi
+    }
+
+    ensure_file "$HOME/.config/waybar/colors.css" <<'EOF'
+@define-color background #1e1e2e;
+@define-color background-alt #313244;
+@define-color foreground #cdd6f4;
+@define-color accent #cba6f7;
+@define-color accent-2 #89b4fa;
+@define-color border #6c7086;
+@define-color urgent #f38ba8;
+EOF
+
+    ensure_file "$HOME/.config/wlogout/colors.css" <<'EOF'
+@define-color background #1e1e2e;
+@define-color background-alt #313244;
+@define-color foreground #cdd6f4;
+@define-color accent #cba6f7;
+@define-color border #6c7086;
+EOF
+
+    ensure_file "$HOME/.config/mako/mako-colors" <<'EOF'
+background-color=#1e1e2e
+text-color=#cdd6f4
+border-color=#cba6f7
+EOF
   '';
 
   # ── GTK theme ─────────────────────────────────────────────────────────────

@@ -58,6 +58,10 @@
     input_path = "${config.home.homeDirectory}/.config/matugen/templates/wlogout.css"
     output_path = "${config.home.homeDirectory}/.config/wlogout/colors.css"
 
+    [templates.discord]
+    input_path = "${config.home.homeDirectory}/.config/matugen/templates/discord.css"
+    output_path = "${config.home.homeDirectory}/.config/vesktop/themes/matugen.css"
+
     [templates.kvantum_kvconfig]
     input_path = "${config.home.homeDirectory}/.config/matugen/templates/kvantum.kvconfig"
     output_path = "${config.home.homeDirectory}/.config/Kvantum/matugen/matugen.kvconfig"
@@ -334,6 +338,76 @@ EOF
     @define-color border {{colors.outline.default.hex}};
   '';
 
+  # ── Discord (Vesktop/Vencord) ────────────────────────────────────────────
+  # GTK/Kvantum theming never reaches Discord — it's Electron and draws its
+  # own UI. Vesktop bundles Vencord, which supports loading arbitrary CSS
+  # from ~/.config/vesktop/themes/. We layer a small set of variable
+  # overrides (surfaces, text, accent, borders — the properties that read as
+  # "the theme" at a glance) on top of the community Catppuccin Mocha base,
+  # so it keeps every other polish detail (badges, syntax highlighting,
+  # status colors) while the backgrounds/accent follow your wallpaper.
+  programs.vesktop = {
+    enable = true;
+    vencord.settings = {
+      enabledThemes = [ "matugen.css" ];
+      useQuickCss = true;
+    };
+  };
+
+  home.file.".config/matugen/templates/discord.css".text = ''
+    @import url("https://catppuccin.github.io/discord/dist/catppuccin-mocha.theme.css");
+
+    :root {
+      /* Layered backgrounds */
+      --background-base-lowest: {{colors.surface_container_lowest.default.hex}} !important;
+      --background-base-lower: {{colors.surface_container_low.default.hex}} !important;
+      --background-base-low: {{colors.surface_container.default.hex}} !important;
+      --background-surface-high: {{colors.surface.default.hex}} !important;
+      --background-surface-higher: {{colors.surface_container_high.default.hex}} !important;
+      --background-surface-highest: {{colors.surface_container_highest.default.hex}} !important;
+      --home-background: {{colors.surface.default.hex}} !important;
+      --chat-background: {{colors.surface.default.hex}} !important;
+      --chat-background-default: {{colors.surface.default.hex}} !important;
+      --channeltextarea-background: {{colors.surface_container.default.hex}} !important;
+      --modal-background: {{colors.surface_container.default.hex}} !important;
+      --modal-footer-background: {{colors.surface_container.default.hex}} !important;
+      --background-accent: {{colors.surface_container_high.default.hex}} !important;
+      --card-background-default: {{colors.surface_container_high.default.hex}} !important;
+
+      /* Text and icons */
+      --text-default: {{colors.on_surface.default.hex}} !important;
+      --text-strong: {{colors.on_surface.default.hex}} !important;
+      --text-muted: {{colors.on_surface_variant.default.hex}} !important;
+      --text-subtle: {{colors.on_surface_variant.default.hex}} !important;
+      --interactive-text-default: {{colors.on_surface.default.hex}} !important;
+      --interactive-icon-default: {{colors.on_surface.default.hex}} !important;
+      --icon-default: {{colors.on_surface.default.hex}} !important;
+      --icon-strong: {{colors.on_surface.default.hex}} !important;
+      --channels-default: {{colors.on_surface_variant.default.hex}} !important;
+      --channel-icon: {{colors.on_surface_variant.default.hex}} !important;
+
+      /* Accent — the wallpaper's primary color */
+      --brand-500: {{colors.primary.default.hex}} !important;
+      --brand-530: color-mix(in srgb, {{colors.primary.default.hex}} 88%, black);
+      --brand-560: color-mix(in srgb, {{colors.primary.default.hex}} 76%, black);
+      --brand-600: color-mix(in srgb, {{colors.primary.default.hex}} 64%, black);
+      --text-link: {{colors.primary.default.hex}} !important;
+      --text-brand: {{colors.primary.default.hex}};
+      --control-brand-foreground: {{colors.primary.default.hex}};
+      --control-primary-background-default: {{colors.primary.default.hex}} !important;
+      --control-primary-background-hover: color-mix(in srgb, {{colors.primary.default.hex}} 88%, black);
+      --control-primary-background-active: color-mix(in srgb, {{colors.primary.default.hex}} 76%, black);
+      --scrollbar-thin-thumb: {{colors.primary.default.hex}};
+      --scrollbar-auto-thumb: {{colors.primary.default.hex}};
+      --mention-foreground: {{colors.primary.default.hex}};
+
+      /* Borders */
+      --border-muted: {{colors.outline_variant.default.hex}} !important;
+      --border-normal: {{colors.outline_variant.default.hex}} !important;
+      --border-strong: {{colors.outline.default.hex}} !important;
+    }
+  '';
+
   home.file.".config/matugen/templates/kvantum.kvconfig".text = ''
     [%General]
     window.color={{colors.surface.default.hex}}
@@ -535,6 +609,53 @@ EOF
 background-color=#1e1e2e
 text-color=#cdd6f4
 border-color=#cba6f7
+EOF
+
+    ensure_file "$HOME/.config/vesktop/themes/matugen.css" <<'EOF'
+@import url("https://catppuccin.github.io/discord/dist/catppuccin-mocha.theme.css");
+
+:root {
+  --background-base-lowest: #11111b !important;
+  --background-base-lower: #181825 !important;
+  --background-base-low: #1e1e2e !important;
+  --background-surface-high: #1e1e2e !important;
+  --background-surface-higher: #313244 !important;
+  --background-surface-highest: #45475a !important;
+  --home-background: #1e1e2e !important;
+  --chat-background: #1e1e2e !important;
+  --chat-background-default: #1e1e2e !important;
+  --channeltextarea-background: #181825 !important;
+  --modal-background: #1e1e2e !important;
+  --modal-footer-background: #1e1e2e !important;
+  --background-accent: #313244 !important;
+  --card-background-default: #313244 !important;
+  --text-default: #cdd6f4 !important;
+  --text-strong: #cdd6f4 !important;
+  --text-muted: #a6adc8 !important;
+  --text-subtle: #a6adc8 !important;
+  --interactive-text-default: #cdd6f4 !important;
+  --interactive-icon-default: #cdd6f4 !important;
+  --icon-default: #cdd6f4 !important;
+  --icon-strong: #cdd6f4 !important;
+  --channels-default: #a6adc8 !important;
+  --channel-icon: #a6adc8 !important;
+  --brand-500: #cba6f7 !important;
+  --brand-530: color-mix(in srgb, #cba6f7 88%, black);
+  --brand-560: color-mix(in srgb, #cba6f7 76%, black);
+  --brand-600: color-mix(in srgb, #cba6f7 64%, black);
+  --text-link: #cba6f7 !important;
+  --text-brand: #cba6f7;
+  --control-brand-foreground: #cba6f7;
+  --control-primary-background-default: #cba6f7 !important;
+  --control-primary-background-hover: color-mix(in srgb, #cba6f7 88%, black);
+  --control-primary-background-active: color-mix(in srgb, #cba6f7 76%, black);
+  --scrollbar-thin-thumb: #cba6f7;
+  --scrollbar-auto-thumb: #cba6f7;
+  --mention-foreground: #cba6f7;
+  --border-muted: #585b70 !important;
+  --border-normal: #585b70 !important;
+  --border-strong: #6c7086 !important;
+}
 EOF
   '';
 

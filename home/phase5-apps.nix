@@ -8,7 +8,8 @@
 
     # ── Communication / notes / AI tools ────────────────────────────────────
     claude-code
-    discord
+    # discord replaced by programs.vesktop (phase6-theming.nix) — Vencord-bundled
+    # client, needed so Discord can actually load custom/matugen-driven CSS.
     obsidian
 
     # ── Gaming / emulation ─────────────────────────────────────────────────

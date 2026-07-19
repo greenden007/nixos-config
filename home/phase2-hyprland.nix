@@ -401,7 +401,7 @@
     enable = true;
     package = pkgs.rofi;
     terminal = "${pkgs.ghostty}/bin/ghostty";
-    theme = "~/.local/share/rofi/themes/matugen.rasi";
+    theme = "${config.home.homeDirectory}/.local/share/rofi/themes/matugen.rasi";
     extraConfig = {
       modi = "drun,window,run";
       show-icons = true;

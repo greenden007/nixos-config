@@ -80,13 +80,12 @@
         preserve_split = true;
       };
 
-      # ── Layer blur (rofi launcher + wlogout powermenu) ────────────────
+      # ── Layer blur (rofi launcher + wlogout powermenu + waybar) ────────────
+      # Hyprland 0.53+ syntax: fields are space-separated within one rule,
+      # matched via match:namespace (regex). The old "blur, rofi" comma
+      # style was removed.
       layerrule = [
-        "blur, rofi"
-        "ignorezero, rofi"
-        "blur, logout_dialog"
-        "ignorezero, logout_dialog"
-        "blur, waybar"
+        "blur on, ignore_alpha 1, match:namespace ^(rofi|logout_dialog|waybar)$"
       ];
 
       # ── Startup apps ────────────────────────────────────────────────────

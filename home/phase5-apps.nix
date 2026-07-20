@@ -88,9 +88,17 @@
         [[ -n "$selection" ]] || exit 0
 
         tmp="$target.tmp"
-        magick "$selection" "$tmp"
+        magick "$selection" "png:$tmp"
         mv "$tmp" "$target"
         printf '%s\n' "$selection" > "$target_dir/wallpaper-current"
+
+        # HyDE's style_12 rofi launcher shows a square crop of the wallpaper
+        # in its sidebar panel — regenerate it alongside the full wallpaper.
+        quad_dir="$HOME/.cache/hyde"
+        mkdir -p "$quad_dir"
+        quad_tmp="$quad_dir/wall.quad.tmp"
+        magick "$target" -resize 800x800^ -gravity center -extent 800x800 "png:$quad_tmp"
+        mv "$quad_tmp" "$quad_dir/wall.quad"
 
         matugen image "$target" >/dev/null
 

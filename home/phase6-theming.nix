@@ -46,6 +46,10 @@
     input_path = "${config.home.homeDirectory}/.config/matugen/templates/rofi.rasi"
     output_path = "${config.home.homeDirectory}/.local/share/rofi/themes/matugen.rasi"
 
+    [templates.rofi_hyde_colors]
+    input_path = "${config.home.homeDirectory}/.config/matugen/templates/rofi-hyde-colors.rasi"
+    output_path = "${config.home.homeDirectory}/.config/rofi/theme.rasi"
+
     [templates.waybar]
     input_path = "${config.home.homeDirectory}/.config/matugen/templates/waybar.css"
     output_path = "${config.home.homeDirectory}/.config/waybar/colors.css"
@@ -164,6 +168,161 @@
     button selected {
       background-color: @bg-col;
       text-color: @border-col;
+    }
+  '';
+
+  home.file.".config/matugen/templates/rofi-hyde-colors.rasi".text = ''
+    * {
+      main-bg: {{colors.surface.default.hex}};
+      main-fg: {{colors.on_surface.default.hex}};
+      select-bg: {{colors.primary.default.hex}};
+      select-fg: {{colors.on_primary.default.hex}};
+    }
+  '';
+
+  # ── HyDE style_12 ("GradientView") launcher, ported verbatim ───────────────
+  # https://github.com/HyDE-Project/HyDE/blob/master/Configs/.local/share/hyde/rofi/themes/style_12.rasi
+  # Two changes from upstream: paths made absolute (rofi doesn't reliably
+  # expand ~ the way HyDE's own launcher wrapper script does for it), and
+  # icon-theme swapped to Papirus-Dark since Tela-circle-dracula isn't
+  # installed here.
+  home.file.".local/share/rofi/themes/style_12.rasi".text = ''
+    /**
+    * ROFI Layout
+    *
+    * Style 12: Sidebar with a gradient effect and modes.
+    * Attribute: rofilaunch,launcher
+    * User: The HyDE Project [ GradientView ]
+    * Copyright: https://github.com/prasanthrangan/hyprdots/
+    * Ported into this flake with matugen-driven colors.
+    */
+
+    configuration {
+      modi: "drun,filebrowser,window,run";
+      show-icons: true;
+      display-drun: "";
+      display-run: "";
+      display-filebrowser: "";
+      display-window: "";
+      drun-display-format: "{name}";
+      window-format: "{w}{t}";
+      font: "JetBrainsMono Nerd Font 10";
+      icon-theme: "Papirus-Dark";
+    }
+
+    @theme "${config.home.homeDirectory}/.config/rofi/theme.rasi"
+
+    window {
+      height: 30em;
+      width: 60em;
+      transparency: "real";
+      fullscreen: false;
+      enabled: true;
+      cursor: "default";
+      spacing: 0em;
+      padding: 0em;
+      border-color: transparent;
+      background-color: transparent;
+    }
+
+    mainbox {
+      enabled: true;
+      spacing: 0em;
+      padding: 0em;
+      orientation: horizontal;
+      children: [ "listbox", "inputbar" ];
+      background-color: transparent;
+    }
+
+    inputbar {
+      enabled: true;
+      width: 30em;
+      spacing: 0em;
+      padding: 0em;
+      children: [ "entry" ];
+      expand: false;
+      background-color: transparent;
+      background-image: url("${config.home.homeDirectory}/.cache/hyde/wall.quad", width);
+    }
+
+    entry {
+      enabled: false;
+    }
+
+    listbox {
+      spacing: 0em;
+      padding: 0em;
+      children: [ "dummy", "listview", "dummy" ];
+      background-color: @main-bg;
+      expand: false;
+      width: 27em;
+    }
+
+    listview {
+      enabled: true;
+      spacing: 0em;
+      padding: 1em 2em 1em 2em;
+      columns: 1;
+      lines: 8;
+      cycle: true;
+      dynamic: true;
+      scrollbar: false;
+      layout: vertical;
+      reverse: false;
+      expand: false;
+      fixed-height: true;
+      fixed-columns: true;
+      cursor: "default";
+      background-color: transparent;
+      text-color: @main-fg;
+    }
+
+    dummy {
+      background-color: transparent;
+      expand: true;
+    }
+
+    element {
+      enabled: true;
+      spacing: 1em;
+      padding: 0.5em;
+      cursor: pointer;
+      background-color: transparent;
+      text-color: @main-fg;
+    }
+
+    element selected.normal {
+      background-color: @select-bg;
+      text-color: @select-fg;
+    }
+
+    element-icon {
+      size: 2.2em;
+      cursor: inherit;
+      background-color: transparent;
+      text-color: inherit;
+    }
+
+    element-text {
+      vertical-align: 0.5;
+      horizontal-align: 0.0;
+      cursor: inherit;
+      background-color: transparent;
+      text-color: inherit;
+    }
+
+    error-message {
+      text-color: @main-fg;
+      background-color: @main-bg;
+      text-transform: capitalize;
+      children: [ "textbox" ];
+    }
+
+    textbox {
+      text-color: inherit;
+      background-color: inherit;
+      vertical-align: 0.5;
+      horizontal-align: 0.5;
     }
   '';
 
@@ -657,6 +816,20 @@ EOF
   --border-strong: #6c7086 !important;
 }
 EOF
+
+    ensure_file "$HOME/.config/rofi/theme.rasi" <<'EOF'
+* {
+  main-bg: #1e1e2e;
+  main-fg: #cdd6f4;
+  select-bg: #cba6f7;
+  select-fg: #1e1e2e;
+}
+EOF
+
+    if [ ! -e "$HOME/.cache/hyde/wall.quad" ]; then
+      mkdir -p "$HOME/.cache/hyde"
+      ${pkgs.imagemagick}/bin/magick -size 800x800 xc:'#1e1e2e' "png:$HOME/.cache/hyde/wall.quad"
+    fi
   '';
 
   # ── GTK theme ─────────────────────────────────────────────────────────────

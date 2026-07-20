@@ -178,12 +178,8 @@
   xdg.configFile."hypr/hyprpaper.conf".text = ''
     ipc = true
     splash = false
-
-    wallpaper {
-      monitor =
-      path = ~/.config/hypr/wallpaper.png
-      fit_mode = cover
-    }
+    preload = ~/.config/hypr/wallpaper.png
+    wallpaper = ,~/.config/hypr/wallpaper.png
   '';
 
   systemd.user.services.hyprpaper = {

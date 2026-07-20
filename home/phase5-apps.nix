@@ -111,9 +111,9 @@
         systemctl --user start hyprpaper.service >/dev/null 2>&1 || true
 
         if command -v hyprctl >/dev/null 2>&1; then
-          hyprctl hyprpaper wallpaper ", $target, cover" >/dev/null 2>&1 || \
-            hyprctl hyprpaper wallpaper ",$target,cover" >/dev/null 2>&1 || \
-            hyprctl hyprpaper wallpaper ",$target" >/dev/null 2>&1 || true
+          hyprctl hyprpaper preload "$target" >/dev/null 2>&1 || true
+          hyprctl hyprpaper wallpaper ",$target" >/dev/null 2>&1 || true
+          hyprctl hyprpaper unload all >/dev/null 2>&1 || true
         fi
 
         systemctl --user try-restart waybar.service mako.service >/dev/null 2>&1 || true

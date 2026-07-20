@@ -94,10 +94,16 @@
 
         # HyDE's style_12 rofi launcher shows a square crop of the wallpaper
         # in its sidebar panel — regenerate it alongside the full wallpaper.
+        # HyDE's style_12 rofi launcher shows a wallpaper crop in its sidebar
+        # panel, faded from transparent (left, blending into the listbox)
+        # to fully opaque (right) — that's the "gradient effect" the theme
+        # is named for, not a hard-edged rectangle.
         quad_dir="$HOME/.cache/hyde"
         mkdir -p "$quad_dir"
         quad_tmp="$quad_dir/wall.quad.tmp"
-        magick "$target" -resize 800x800^ -gravity center -extent 800x800 "png:$quad_tmp"
+        magick "$target" -resize 800x800^ -gravity center -extent 800x800 -alpha set \
+          \( -size 800x800 gradient:black-white -rotate -90 \) \
+          -compose CopyOpacity -composite "png:$quad_tmp"
         mv "$quad_tmp" "$quad_dir/wall.quad"
 
         matugen image "$target" >/dev/null

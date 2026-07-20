@@ -828,7 +828,9 @@ EOF
 
     if [ ! -e "$HOME/.cache/hyde/wall.quad" ]; then
       mkdir -p "$HOME/.cache/hyde"
-      ${pkgs.imagemagick}/bin/magick -size 800x800 xc:'#1e1e2e' "png:$HOME/.cache/hyde/wall.quad"
+      ${pkgs.imagemagick}/bin/magick -size 800x800 xc:'#1e1e2e' -alpha set \
+        \( -size 800x800 gradient:black-white -rotate -90 \) \
+        -compose CopyOpacity -composite "png:$HOME/.cache/hyde/wall.quad"
     fi
   '';
 

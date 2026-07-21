@@ -411,60 +411,111 @@
   # ── wlogout ───────────────────────────────────────────────────────────────
   # HyDE-style full-screen power menu: six icon buttons, colors pulled from
   # the same matugen palette as waybar/rofi/mako.
-  programs.wlogout = {
+    programs.wlogout = {
     enable = true;
-    layout = [
-      { label = "lock";      action = "hyprlock";                text = "Lock";      keybind = "l"; }
-      { label = "logout";    action = "hyprctl dispatch exit";    text = "Logout";    keybind = "e"; }
-      { label = "suspend";   action = "systemctl suspend";        text = "Suspend";   keybind = "u"; }
-      { label = "hibernate"; action = "systemctl hibernate";      text = "Hibernate"; keybind = "h"; }
-      { label = "reboot";    action = "systemctl reboot";         text = "Reboot";    keybind = "r"; }
-      { label = "shutdown";  action = "systemctl poweroff";       text = "Shutdown";  keybind = "s"; }
-    ];
-    style = ''
-      @import "${config.home.homeDirectory}/.config/wlogout/colors.css";
 
+    layout = [
+      { label = "lock";      action = "hyprlock";                        text = "Lock";      keybind = "l"; }
+      { label = "logout";    action = "hyprctl dispatch exit";          text = "Logout";    keybind = "e"; }
+      { label = "suspend";   action = "hyprlock & sleep 1; systemctl suspend"; text = "Suspend";   keybind = "u"; }
+      { label = "shutdown";  action = "systemctl poweroff";             text = "Shutdown";  keybind = "s"; }
+      { label = "hibernate"; action = "systemctl hibernate";            text = "Hibernate"; keybind = "h"; }
+      { label = "reboot";    action = "systemctl reboot";               text = "Reboot";    keybind = "r"; }
+    ];
+
+    style = ''
       * {
+        background-image: none;
         font-family: "JetBrainsMono Nerd Font", monospace;
         font-size: 14px;
       }
+
+      @import "${config.home.homeDirectory}/.config/wlogout/colors.css";
+
       window {
-        background-color: alpha(@background, 0.55);
+        background-color: transparent;
       }
+
       button {
         color: @foreground;
-        background-color: alpha(@background-alt, 0.75);
-        border: 2px solid alpha(@border, 0.4);
-        border-radius: 18px;
+        background-color: alpha(@background-alt, 0.78);
+        outline-style: none;
+        border: none;
+        border-width: 0px;
         background-repeat: no-repeat;
-        background-position: center 30%;
-        background-size: 22%;
-        margin: 12px;
-        transition: all 0.2s ease-in-out;
+        background-position: center;
+        background-size: 18%;
+        border-radius: 0px;
+        box-shadow: none;
+        text-shadow: none;
       }
-      button:focus, button:active, button:hover {
+
+      button:focus {
+        background-color: alpha(@accent, 0.22);
+        background-size: 24%;
+      }
+
+      button:hover {
         background-color: alpha(@accent, 0.28);
-        border-color: @accent;
+        background-size: 26%;
+        border-radius: 28px;
+        transition: all 0.3s cubic-bezier(.55,0.0,.28,1.682);
       }
-      /* Papirus only ships the "actions" category up to 24x24, but these
-         are SVGs so they scale cleanly at any button size via CSS. */
+
+      button:hover#lock {
+        border-radius: 28px 28px 0px 28px;
+        margin: 18px 0px 0px 18px;
+      }
+
+      button:hover#logout {
+        border-radius: 28px 0px 28px 28px;
+        margin: 0px 0px 18px 18px;
+      }
+
+      button:hover#shutdown {
+        border-radius: 28px 28px 28px 0px;
+        margin: 18px 18px 0px 0px;
+      }
+
+      button:hover#reboot {
+        border-radius: 0px 28px 28px 28px;
+        margin: 0px 18px 18px 0px;
+      }
+
       #lock {
         background-image: image(url("${pkgs.papirus-icon-theme}/share/icons/Papirus-Dark/24x24/actions/system-lock-screen.svg"));
+        border-radius: 18px 0px 0px 0px;
+        margin: 12px 0px 0px 12px;
       }
+
       #logout {
         background-image: image(url("${pkgs.papirus-icon-theme}/share/icons/Papirus-Dark/24x24/actions/system-log-out.svg"));
+        border-radius: 0px 0px 0px 18px;
+        margin: 0px 0px 12px 12px;
       }
-      #suspend {
-        background-image: image(url("${pkgs.papirus-icon-theme}/share/icons/Papirus-Dark/24x24/actions/system-suspend.svg"));
-      }
-      #hibernate {
-        background-image: image(url("${pkgs.papirus-icon-theme}/share/icons/Papirus-Dark/24x24/actions/system-suspend-hibernate.svg"));
-      }
-      #reboot {
-        background-image: image(url("${pkgs.papirus-icon-theme}/share/icons/Papirus-Dark/24x24/actions/system-reboot.svg"));
-      }
+
       #shutdown {
         background-image: image(url("${pkgs.papirus-icon-theme}/share/icons/Papirus-Dark/24x24/actions/system-shutdown.svg"));
+        border-radius: 0px 18px 0px 0px;
+        margin: 12px 12px 0px 0px;
+      }
+
+      #reboot {
+        background-image: image(url("${pkgs.papirus-icon-theme}/share/icons/Papirus-Dark/24x24/actions/system-reboot.svg"));
+        border-radius: 0px 0px 18px 0px;
+        margin: 0px 12px 12px 0px;
+      }
+
+      #suspend {
+        background-image: image(url("${pkgs.papirus-icon-theme}/share/icons/Papirus-Dark/24x24/actions/system-suspend.svg"));
+        border-radius: 18px;
+        margin: 12px;
+      }
+
+      #hibernate {
+        background-image: image(url("${pkgs.papirus-icon-theme}/share/icons/Papirus-Dark/24x24/actions/system-suspend-hibernate.svg"));
+        border-radius: 18px;
+        margin: 12px;
       }
     '';
   };

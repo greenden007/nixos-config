@@ -95,13 +95,13 @@
       esac
 
       # ── fzf keybindings (Ctrl+R history, Ctrl+T file, Alt+C cd) ──────────
-      eval "$(fzf --bash)"
+      source "${config.xdg.configHome}/bash/fzf-init.bash"
 
       # ── zoxide (smart cd) ────────────────────────────────────────────────
-      eval "$(zoxide init bash --cmd cd)"
+      source "${config.xdg.configHome}/bash/zoxide-init.bash"
 
       # ── Starship prompt ──────────────────────────────────────────────────
-      eval "$(starship init bash)"
+      source "${config.xdg.configHome}/bash/starship-init.bash"
 
       # ── fzf options ──────────────────────────────────────────────────────
       export FZF_DEFAULT_OPTS="
@@ -213,6 +213,18 @@
     };
   };
 
+  # ── Pre-generated shell init scripts ──────────────────────────────────────
+  home.file = {
+    "bash/fzf-init.bash".source =
+      pkgs.runCommand "fzf-init" {} ''${pkgs.fzf}/bin/fzf --bash > $out'';
+
+    "bash/zoxide-init.bash".source =
+      pkgs.runCommand "zoxide-init" {} ''${pkgs.zoxide}/bin/zoxide init bash --cmd cd > $out'';
+
+    "bash/starship-init.bash".source =
+      pkgs.runCommand "starship-init" {} ''${pkgs.starship}/bin/starship init bash > $out'';
+  };
+
   # ── Shell tool packages ───────────────────────────────────────────────────
   home.packages = with pkgs; [
     fzf
@@ -226,4 +238,6 @@
     htop
     sysstat
   ];
+
+  
 }

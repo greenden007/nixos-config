@@ -135,14 +135,15 @@
         mv "$tmp" "$target"
         printf '%s\n' "$selection" > "$current_file"
 
-        # HyDE's style_12 rofi launcher shows a wallpaper crop in its sidebar
-        # panel, faded from transparent (left, blending into the listbox)
-        # to fully opaque (right) — that's the "gradient effect" the theme
-        # is named for, not a hard-edged rectangle.
+        # HyDE's style_11 rofi launcher shows a wallpaper crop in its sidebar
+        # panel, faded from fully opaque (left) to transparent (right,
+        # blending into the listbox) — style_11's image panel sits on the
+        # LEFT (unlike style_12, where it's on the right), so the fade runs
+        # the opposite direction here.
         quad_dir="$HOME/.cache/hyde"
         quad_tmp="$quad_dir/wall.quad.tmp"
         magick "$target" -resize 800x800^ -gravity center -extent 800x800 -alpha set \
-          \( -size 800x800 gradient:black-white -rotate -90 \) \
+          \( -size 800x800 gradient:black-white -rotate 90 \) \
           -compose CopyOpacity -composite "png:$quad_tmp"
         mv "$quad_tmp" "$quad_dir/wall.quad"
 

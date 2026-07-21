@@ -397,7 +397,7 @@
     enable = true;
     package = pkgs.rofi;
     terminal = "${pkgs.ghostty}/bin/ghostty";
-    theme = "${config.home.homeDirectory}/.local/share/rofi/themes/style_12.rasi";
+    theme = "${config.home.homeDirectory}/.local/share/rofi/themes/style_11.rasi";
     extraConfig = {
       modi = "drun,window,run";
       show-icons = true;

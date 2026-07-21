@@ -175,6 +175,7 @@
     * {
       main-bg: {{colors.surface.default.hex}};
       main-fg: {{colors.on_surface.default.hex}};
+      main-br: {{colors.primary.default.hex}};
       select-bg: {{colors.primary.default.hex}};
       select-fg: {{colors.on_primary.default.hex}};
     }
@@ -286,6 +287,154 @@
       enabled: true;
       spacing: 1em;
       padding: 0.5em;
+      cursor: pointer;
+      background-color: transparent;
+      text-color: @main-fg;
+    }
+
+    element selected.normal {
+      background-color: @select-bg;
+      text-color: @select-fg;
+    }
+
+    element-icon {
+      size: 2.2em;
+      cursor: inherit;
+      background-color: transparent;
+      text-color: inherit;
+    }
+
+    element-text {
+      vertical-align: 0.5;
+      horizontal-align: 0.0;
+      cursor: inherit;
+      background-color: transparent;
+      text-color: inherit;
+    }
+
+    error-message {
+      text-color: @main-fg;
+      background-color: @main-bg;
+      text-transform: capitalize;
+      children: [ "textbox" ];
+    }
+
+    textbox {
+      text-color: inherit;
+      background-color: inherit;
+      vertical-align: 0.5;
+      horizontal-align: 0.5;
+    }
+  '';
+
+  # ── HyDE style_11 ("DiagonalSplit") launcher, ported verbatim ───────────────
+  # https://github.com/HyDE-Project/HyDE/blob/master/Configs/.local/share/hyde/rofi/themes/style_11.rasi
+  # Same two edits as style_12: absolute paths instead of ~, and icon-theme
+  # swapped to Papirus-Dark. Note the layout is mirrored vs style_12 —
+  # mainbox children are [ "inputbar", "listbox" ] instead of the other way
+  # round, so the wallpaper panel sits on the LEFT here. That means the
+  # wall.quad gradient direction in wallpaper-picker must fade opposite of
+  # style_12's (opaque on the left, transparent on the right, toward the
+  # seam with the list) for the two themes to be interchangeable.
+  home.file.".local/share/rofi/themes/style_11.rasi".text = ''
+    /**
+    * ROFI Layout
+    *
+    * Style 11: Diagonal background split with modes or a list.
+    * Attribute: rofilaunch,launcher
+    * User: The HyDE Project [ DiagonalSplit ]
+    * Copyright: https://github.com/prasanthrangan/hyprdots/
+    * Ported into this flake with matugen-driven colors.
+    */
+
+    configuration {
+      modi: "drun,filebrowser,window,run";
+      show-icons: true;
+      display-drun: "";
+      display-run: "";
+      display-filebrowser: "";
+      display-window: "";
+      drun-display-format: "{name}";
+      window-format: "{w}{t}";
+      font: "JetBrainsMono Nerd Font 10";
+      icon-theme: "Papirus-Dark";
+    }
+
+    @theme "${config.home.homeDirectory}/.config/rofi/theme.rasi"
+
+    window {
+      height: 30em;
+      width: 58em;
+      transparency: "real";
+      fullscreen: false;
+      enabled: true;
+      cursor: "default";
+      spacing: 0em;
+      padding: 0em;
+      border-color: @main-br;
+      background-color: transparent;
+    }
+
+    mainbox {
+      enabled: true;
+      spacing: 0em;
+      padding: 0.8em;
+      orientation: horizontal;
+      children: [ "inputbar", "listbox" ];
+      background-color: #00000003;
+    }
+
+    inputbar {
+      enabled: true;
+      width: 28.5em;
+      spacing: 0em;
+      padding: 0em;
+      children: [ "entry" ];
+      expand: false;
+      background-color: @main-bg;
+      background-image: url("${config.home.homeDirectory}/.cache/hyde/wall.quad", width);
+      border-radius: 1em 0em 0em 1em;
+    }
+
+    entry {
+      enabled: false;
+    }
+
+    listbox {
+      spacing: 0em;
+      padding: 0em;
+      children: [ "dummy", "listview", "dummy" ];
+      background-color: @main-bg;
+      border-radius: 0em 1em 1em 0em;
+    }
+
+    listview {
+      enabled: true;
+      spacing: 0em;
+      padding: 1em 2em 1em 2em;
+      columns: 1;
+      lines: 8;
+      cycle: true;
+      dynamic: true;
+      scrollbar: false;
+      layout: vertical;
+      reverse: false;
+      expand: false;
+      fixed-height: true;
+      fixed-columns: true;
+      cursor: "default";
+      background-color: transparent;
+      text-color: @main-fg;
+    }
+
+    dummy {
+      background-color: transparent;
+    }
+
+    element {
+      enabled: true;
+      spacing: 1em;
+      padding: 0.5em 0.5em 0.5em 1.5em;
       cursor: pointer;
       background-color: transparent;
       text-color: @main-fg;
@@ -821,6 +970,7 @@ EOF
 * {
   main-bg: #1e1e2e;
   main-fg: #cdd6f4;
+  main-br: #cba6f7;
   select-bg: #cba6f7;
   select-fg: #1e1e2e;
 }
@@ -829,7 +979,7 @@ EOF
     if [ ! -e "$HOME/.cache/hyde/wall.quad" ]; then
       mkdir -p "$HOME/.cache/hyde"
       ${pkgs.imagemagick}/bin/magick -size 800x800 xc:'#1e1e2e' -alpha set \
-        \( -size 800x800 gradient:black-white -rotate -90 \) \
+        \( -size 800x800 gradient:black-white -rotate 90 \) \
         -compose CopyOpacity -composite "png:$HOME/.cache/hyde/wall.quad"
     fi
   '';

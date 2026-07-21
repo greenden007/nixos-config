@@ -111,9 +111,12 @@
         systemctl --user start hyprpaper.service >/dev/null 2>&1 || true
 
         if command -v hyprctl >/dev/null 2>&1; then
-          hyprctl hyprpaper preload "$target" >/dev/null 2>&1 || true
-          hyprctl hyprpaper wallpaper ",$target" >/dev/null 2>&1 || true
-          hyprctl hyprpaper unload all >/dev/null 2>&1 || true
+          # hyprpaper caches by path, not content — since $target is always
+          # the same filename, plain preload/wallpaper won't pick up new
+          # bytes on disk. `reload` is hyprpaper's dedicated command for
+          # exactly this case: it unloads the old copy, preloads the fresh
+          # file, and sets it, atomically.
+          hyprctl hyprpaper reload ",$target" >/dev/null 2>&1 || true
         fi
 
         systemctl --user try-restart waybar.service mako.service >/dev/null 2>&1 || true

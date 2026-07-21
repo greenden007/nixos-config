@@ -40,7 +40,7 @@
     matugen
     (writeShellApplication {
       name = "wallpaper-picker";
-      runtimeInputs = [ findutils rofi coreutils matugen systemd libnotify imagemagick hyprland ];
+      runtimeInputs = [ findutils rofi coreutils matugen systemd libnotify imagemagick hyprland jq gawk ];
       text = ''
         set -euo pipefail
 
@@ -48,8 +48,10 @@
         target_dir="$HOME/.config/hypr"
         target="$target_dir/wallpaper.png"
         theme="$HOME/.local/share/rofi/themes/wallpaper-grid.rasi"
+        thumb_dir="$HOME/.cache/hyde/thumbs"
+        current_file="$target_dir/wallpaper-current"
 
-        mkdir -p "$target_dir"
+        mkdir -p "$target_dir" "$thumb_dir"
 
         if [[ ! -d "$wallpaper_dir" ]]; then
           mkdir -p "$wallpaper_dir"
@@ -66,40 +68,78 @@
           exit 1
         fi
 
-        # rofi's icon-dmenu protocol: "Label\0icon\x1f/path/to/thumbnail"
-        # renders each entry as a full-size thumbnail in the grid theme.
-        # Label is the filename (with extension) so matching back is exact.
-        entries="$(printf '%s\n' "$images" | while IFS= read -r img; do
-          printf '%s\0icon\x1f%s\n' "$(basename "$img")" "$img"
-        done)"
+        # Ported from HyDE's wallpaper/select.sh + core.sh (Wall_Json/Wall_Select):
+        # each wallpaper gets a persistent square thumbnail cached by a hash of
+        # its path, so repeat launches don't re-decode full-resolution photos.
+        # rofi entries carry "name:::path:::thumb" — only the name is displayed
+        # (-display-columns 1), the rest is recovered after selection.
+        #
+        # Entries are written straight to a file, not a bash variable: each
+        # entry embeds a NUL byte (rofi's icon-dmenu separator), and bash
+        # silently drops NUL bytes when a command substitution result is
+        # captured into a variable, which would corrupt the icon markers.
+        entries_file="$(mktemp)"
+        trap 'rm -f "$entries_file"' EXIT
 
-        selection_name="$(printf '%s\n' "$entries" \
-          | ${rofi}/bin/rofi -dmenu -show-icons -i -p "Wallpaper" -theme "$theme" || true)"
-
-        [[ -n "$selection_name" ]] || exit 0
-
-        selection=""
         while IFS= read -r img; do
-          if [[ "$(basename "$img")" == "$selection_name" ]]; then
-            selection="$img"
-            break
+          hash="$(printf '%s' "$img" | sha1sum | cut -d' ' -f1)"
+          thumb="$thumb_dir/$hash.sqre"
+          if [[ ! -e "$thumb" ]]; then
+            thumb_tmp="$thumb.tmp"
+            magick "$img" -resize 400x400^ -gravity center -extent 400x400 "png:$thumb_tmp"
+            mv "$thumb_tmp" "$thumb"
           fi
+          printf '%s:::%s:::%s\0icon\x1f%s\n' "$(basename "$img")" "$img" "$thumb" "$thumb" >> "$entries_file"
         done <<< "$images"
-        [[ -n "$selection" ]] || exit 0
+
+        # Column count and rounding follow your actual monitor width and
+        # Hyprland border radius, same formula HyDE's picker uses, so the
+        # grid always fills the screen sensibly instead of a fixed count.
+        font_scale=10
+        elem_border=24
+        col_count=3
+        if [[ -n "''${HYPRLAND_INSTANCE_SIGNATURE:-}" ]] && command -v hyprctl >/dev/null 2>&1; then
+          mon_x_res="$(hyprctl -j monitors 2>/dev/null \
+            | jq '[.[] | select(.focused==true)] | .[0] | if (.transform % 2 == 0) then .width else .height end' 2>/dev/null || echo 1920)"
+          mon_scale="$(hyprctl -j monitors 2>/dev/null \
+            | jq -r '[.[] | select(.focused==true)] | .[0].scale' 2>/dev/null | tr -d '.' || echo 100)"
+          [[ "$mon_x_res" =~ ^[0-9]+$ ]] || mon_x_res=1920
+          [[ "$mon_scale" =~ ^[0-9]+$ ]] || mon_scale=100
+          mon_x_res=$((mon_x_res * 100 / mon_scale))
+          elm_width=$(((28 + 8 + 5) * font_scale))
+          max_avail=$((mon_x_res - (4 * font_scale)))
+          col_count=$((max_avail / elm_width))
+          [[ $col_count -ge 1 ]] || col_count=3
+          hypr_round="$(hyprctl getoption decoration:rounding -j 2>/dev/null | jq -r '.int' 2>/dev/null || echo 8)"
+          [[ "$hypr_round" =~ ^[0-9]+$ ]] || hypr_round=8
+          elem_border=$((hypr_round * 3))
+        fi
+        grid_override="window{width:100%;} listview{columns:''${col_count};spacing:5em;} element{border-radius:''${elem_border}px;orientation:vertical;} element-icon{size:28em;border-radius:0em;} element-text{padding:1em;}"
+
+        select_args=()
+        if [[ -e "$current_file" ]]; then
+          select_args=(-select "$(basename "$(cat "$current_file")")")
+        fi
+
+        entry="$(${rofi}/bin/rofi -dmenu -show-icons -i -p "Wallpaper" -theme "$theme" \
+              -display-column-separator ":::" -display-columns 1 \
+              -theme-str "$grid_override" \
+              "''${select_args[@]}" < "$entries_file" || true)"
+
+        [[ -n "$entry" ]] || exit 0
+        selection="$(awk -F ':::' '{print $2}' <<< "$entry")"
+        [[ -n "$selection" ]] && [[ -e "$selection" ]] || exit 0
 
         tmp="$target.tmp"
         magick "$selection" "png:$tmp"
         mv "$tmp" "$target"
-        printf '%s\n' "$selection" > "$target_dir/wallpaper-current"
+        printf '%s\n' "$selection" > "$current_file"
 
-        # HyDE's style_12 rofi launcher shows a square crop of the wallpaper
-        # in its sidebar panel — regenerate it alongside the full wallpaper.
         # HyDE's style_12 rofi launcher shows a wallpaper crop in its sidebar
         # panel, faded from transparent (left, blending into the listbox)
         # to fully opaque (right) — that's the "gradient effect" the theme
         # is named for, not a hard-edged rectangle.
         quad_dir="$HOME/.cache/hyde"
-        mkdir -p "$quad_dir"
         quad_tmp="$quad_dir/wall.quad.tmp"
         magick "$target" -resize 800x800^ -gravity center -extent 800x800 -alpha set \
           \( -size 800x800 gradient:black-white -rotate -90 \) \

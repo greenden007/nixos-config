@@ -87,6 +87,19 @@
     @define-color matugen_error {{colors.error.default.hex}};
   '';
 
+  # ── Rofi matugen template — liquid-glass backdrop ─────────────────────────
+  # The window uses transparency = "real" so the Hyprland compositor handles
+  # the actual blur (windowrulev2 blur / blurls = rofi in hyprland.conf).
+  # Inside the window we add a dedicated `glass-pane` box that sits *behind*
+  # the mainbox in the children list. It is:
+  #   • slightly larger than mainbox (negative margin / expand)
+  #   • filled with a semi-transparent version of the primary accent so the
+  #     frosted hue peeks through around the edges
+  #   • given a stronger border and higher border-radius than the inner panel
+  #   • uses a linear-gradient background-image to fake the specular sheen
+  #     that makes Apple's liquid-glass look three-dimensional
+  # The mainbox floats on top with a slightly opaque bg so the content is
+  # readable even when the compositor blur is mild.
   home.file.".config/matugen/templates/rofi.rasi".text = ''
     * {
       bg-col:           {{colors.surface.default.hex}};
@@ -96,60 +109,124 @@
       fg-col:           {{colors.on_surface.default.hex}};
       fg-col2:          {{colors.on_primary.default.hex}};
       grey:             {{colors.outline.default.hex}};
+
+      /* Liquid-glass tint: primary at ~18 % opacity */
+      glass-tint:       {{colors.primary.default.hex}}2e;
+      /* Specular highlight: near-white at ~12 % — top edge gleam */
+      glass-sheen:      #ffffff1f;
+      /* Outer glow: primary at ~30 % — the halo behind the pane */
+      glass-glow:       {{colors.primary.default.hex}}4d;
     }
+
+    /* ── Outer window — fully transparent, compositor does the blur ───────── */
     window {
-      width: 900px;
-      height: 560px;
-      border: 2px;
-      border-color: @border-col;
-      border-radius: 24px;
-      background-color: @bg-col;
+      width:            924px;          /* slightly wider than mainbox */
+      height:           600px;          /* slightly taller than mainbox */
+      border:           0px;
+      background-color: transparent;
+      transparency:     "real";
     }
+
+    /* ── Root box stacks glass-pane BEHIND mainbox ─────────────────────────
+       rofi draws children in declaration order, so glass-pane renders first
+       (underneath) and mainbox renders on top.                               */
+    rootbox {
+      orientation:      vertical;
+      children:         [ glass-pane, mainbox ];
+      background-color: transparent;
+      /* Overlap the two children by making glass-pane use negative spacing */
+      spacing:          0px;
+    }
+
+    /* ── Liquid-glass pane ──────────────────────────────────────────────────
+       Positioned absolutely behind the mainbox via expand + negative margin.
+       The background-image gradient fakes the top-edge specular sheen.       */
+    glass-pane {
+      expand:           true;
+      /* Push it out past the mainbox edges on all sides for the halo effect */
+      margin:           -18px;
+      padding:          0px;
+      border-radius:    36px;
+      border:           1.5px;
+      border-color:     @glass-sheen;
+
+      /* Base: semi-transparent primary tint so the wallpaper color bleeds in */
+      background-color: @glass-tint;
+
+      /* Specular sheen: a subtle top-to-bottom gradient — bright at top,
+         transparent in the middle, faint accent glow at the bottom edge.
+         This is the key trick that gives liquid-glass its depth.             */
+      background-image: linear-gradient(
+        to bottom,
+        @glass-sheen 0%,
+        transparent  38%,
+        transparent  62%,
+        @glass-glow  100%
+      );
+
+      /* Outer drop-shadow for the floating-above-desktop feel */
+      box-shadow:
+        0 8px 32px  @glass-glow,
+        0 2px  8px  @glass-tint,
+        inset 0 1px 0 @glass-sheen;
+    }
+
+    /* ── Main panel — slightly opaque so content is readable ─────────────── */
     mainbox {
-      children: [inputbar, listview];
+      children:         [ inputbar, listview ];
       background-color: @bg-col;
-      padding: 22px;
-      spacing: 18px;
+      /* bg-col is already the surface hex; add opacity via the fallback below
+         — matugen hex output doesn't include alpha, so we overlay a slight
+         transparency by using a box that is NOT fully opaque.
+         Practical opacity: ~88 % — keeps content crisp, lets glass peek through. */
+      /* Reuse bg-col with alpha appended in the static fallback. */
+      opacity:          0.88;
+      padding:          22px;
+      spacing:          18px;
+      border-radius:    28px;
+      border:           1.5px;
+      border-color:     @border-col;
     }
+
     inputbar {
-      children: [prompt, entry];
+      children:         [ prompt, entry ];
       background-color: @bg-col-alt;
-      border-radius: 14px;
-      padding: 10px 16px;
-      spacing: 10px;
+      border-radius:    14px;
+      padding:          10px 16px;
+      spacing:          10px;
     }
     prompt {
       background-color: transparent;
-      text-color: @grey;
+      text-color:       @grey;
     }
     entry {
       background-color: transparent;
-      text-color: @fg-col;
-      placeholder: "Search apps…";
+      text-color:       @fg-col;
+      placeholder:      "Search apps…";
       placeholder-color: @grey;
     }
     listview {
-      columns: 6;
-      lines: 4;
-      spacing: 14px;
+      columns:          6;
+      lines:            4;
+      spacing:          14px;
       background-color: @bg-col;
-      border: 0px;
-      fixed-height: false;
+      border:           0px;
+      fixed-height:     false;
     }
     element {
-      orientation: vertical;
-      padding: 12px 6px;
-      border-radius: 16px;
+      orientation:      vertical;
+      padding:          12px 6px;
+      border-radius:    16px;
       background-color: @bg-col;
     }
     element-icon {
-      size: 52px;
+      size:             52px;
       horizontal-align: 0.5;
     }
     element-text {
       horizontal-align: 0.5;
-      text-color: @fg-col;
-      margin: 6px 0px 0px 0px;
+      text-color:       @fg-col;
+      margin:           6px 0px 0px 0px;
     }
     element selected {
       background-color: @selected-col;
@@ -159,15 +236,15 @@
     }
     mode-switcher { spacing: 0; }
     button {
-      padding: 10px;
+      padding:          10px;
       background-color: @bg-col-alt;
-      text-color: @grey;
-      vertical-align: 0.5;
+      text-color:       @grey;
+      vertical-align:   0.5;
       horizontal-align: 0.5;
     }
     button selected {
       background-color: @bg-col;
-      text-color: @border-col;
+      text-color:       @border-col;
     }
   '';
 
@@ -181,7 +258,7 @@
     }
   '';
 
-  # ── HyDE style_12 ("GradientView") launcher, ported verbatim ───────────────
+  # ── HyDE style_12 (\"GradientView\") launcher, ported verbatim ───────────────
   # https://github.com/HyDE-Project/HyDE/blob/master/Configs/.local/share/hyde/rofi/themes/style_12.rasi
   # Two changes from upstream: paths made absolute (rofi doesn't reliably
   # expand ~ the way HyDE's own launcher wrapper script does for it), and
@@ -327,11 +404,11 @@
     }
   '';
 
-  # ── HyDE style_11 ("DiagonalSplit") launcher, ported verbatim ───────────────
+  # ── HyDE style_11 (\"DiagonalSplit\") launcher, ported verbatim ───────────────
   # https://github.com/HyDE-Project/HyDE/blob/master/Configs/.local/share/hyde/rofi/themes/style_11.rasi
   # Same two edits as style_12: absolute paths instead of ~, and icon-theme
   # swapped to Papirus-Dark. Note the layout is mirrored vs style_12 —
-  # mainbox children are [ "inputbar", "listbox" ] instead of the other way
+  # mainbox children are [ \"inputbar\", \"listbox\" ] instead of the other way
   # round, so the wallpaper panel sits on the LEFT here. That means the
   # wall.quad gradient direction in wallpaper-picker must fade opposite of
   # style_12's (opaque on the left, transparent on the right, toward the
@@ -488,6 +565,9 @@
     elif ! ${pkgs.gnugrep}/bin/grep -q 'columns:' "$theme"; then
       # Old compact-list fallback from before the grid redesign — replace it.
       write_theme=true
+    elif ! ${pkgs.gnugrep}/bin/grep -q 'glass-pane' "$theme"; then
+      # Pre-liquid-glass fallback — replace it.
+      write_theme=true
     fi
     if [ "$write_theme" = true ]; then
       mkdir -p "$(dirname "$theme")"
@@ -500,20 +580,53 @@
   fg-col: #cdd6f4;
   fg-col2: #1e1e2e;
   grey: #6c7086;
+
+  glass-tint:  #cba6f72e;
+  glass-sheen: #ffffff1f;
+  glass-glow:  #cba6f74d;
 }
 window {
-  width: 900px;
-  height: 560px;
-  border: 2px;
-  border-color: @border-col;
-  border-radius: 24px;
-  background-color: @bg-col;
+  width: 924px;
+  height: 600px;
+  border: 0px;
+  background-color: transparent;
+  transparency: "real";
+}
+rootbox {
+  orientation: vertical;
+  children: [ glass-pane, mainbox ];
+  background-color: transparent;
+  spacing: 0px;
+}
+glass-pane {
+  expand: true;
+  margin: -18px;
+  padding: 0px;
+  border-radius: 36px;
+  border: 1px;
+  border-color: @glass-sheen;
+  background-color: @glass-tint;
+  background-image: linear-gradient(
+    to bottom,
+    @glass-sheen 0%,
+    transparent  38%,
+    transparent  62%,
+    @glass-glow  100%
+  );
+  box-shadow:
+    0 8px 32px @glass-glow,
+    0 2px  8px @glass-tint,
+    inset 0 1px 0 @glass-sheen;
 }
 mainbox {
   children: [inputbar, listview];
-  background-color: @bg-col;
+  background-color: #1e1e2ee0;
+  opacity: 0.88;
   padding: 22px;
   spacing: 18px;
+  border-radius: 28px;
+  border: 1px;
+  border-color: #cba6f7;
 }
 inputbar {
   children: [prompt, entry];

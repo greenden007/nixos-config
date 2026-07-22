@@ -27,6 +27,24 @@
     };
   };
 
+  # ── Pre-generated shell init scripts ─────────────────────────────────────
+  xdg.configFile = {
+    "bash/fzf-init.bash".text =
+      builtins.readFile (pkgs.runCommand "fzf-init" {} ''
+        ${pkgs.fzf}/bin/fzf --bash > $out
+      '');
+
+    "bash/zoxide-init.bash".text =
+      builtins.readFile (pkgs.runCommand "zoxide-init" {} ''
+        ${pkgs.zoxide}/bin/zoxide init bash --cmd cd > $out
+      '');
+
+    "bash/starship-init.bash".text =
+      builtins.readFile (pkgs.runCommand "starship-init" {} ''
+        ${pkgs.starship}/bin/starship init bash > $out
+      '');
+  };
+
   # ── Bash ──────────────────────────────────────────────────────────────────
   programs.bash = {
     enable = true;
@@ -57,7 +75,7 @@
 
       # ── bat (modern cat) ────────────────────────────────────────────────
       cat  = "bat --style=plain";
-      catn = "bat";                  # bat with line numbers and headers
+      catn = "bat";
 
       # ── Git shortcuts ───────────────────────────────────────────────────
       g    = "git";
@@ -77,14 +95,14 @@
       nup  = "sudo nix flake update /etc/nixos && sudo nixos-rebuild switch --flake /etc/nixos#ro";
 
       # ── System ──────────────────────────────────────────────────────────
-      grep = "grep --color=auto";
-      df   = "df -h";
-      du   = "du -sh";
-      free = "free -h";
-      cp   = "cp -iv";
-      mv   = "mv -iv";
-      rm   = "rm -iv";
-      mkdir= "mkdir -pv";
+      grep  = "grep --color=auto";
+      df    = "df -h";
+      du    = "du -sh";
+      free  = "free -h";
+      cp    = "cp -iv";
+      mv    = "mv -iv";
+      rm    = "rm -iv";
+      mkdir = "mkdir -pv";
     };
 
     initExtra = ''
@@ -94,13 +112,9 @@
         *) return ;;
       esac
 
-      # ── fzf keybindings (Ctrl+R history, Ctrl+T file, Alt+C cd) ──────────
+      # ── Pre-generated integrations ──────────────────────────────────────
       source "${config.xdg.configHome}/bash/fzf-init.bash"
-
-      # ── zoxide (smart cd) ────────────────────────────────────────────────
       source "${config.xdg.configHome}/bash/zoxide-init.bash"
-
-      # ── Starship prompt ──────────────────────────────────────────────────
       source "${config.xdg.configHome}/bash/starship-init.bash"
 
       # ── fzf options ──────────────────────────────────────────────────────
@@ -213,18 +227,6 @@
     };
   };
 
-  # ── Pre-generated shell init scripts ──────────────────────────────────────
-  home.file = {
-    "bash/fzf-init.bash".source =
-      pkgs.runCommand "fzf-init" {} ''${pkgs.fzf}/bin/fzf --bash > $out'';
-
-    "bash/zoxide-init.bash".source =
-      pkgs.runCommand "zoxide-init" {} ''${pkgs.zoxide}/bin/zoxide init bash --cmd cd > $out'';
-
-    "bash/starship-init.bash".source =
-      pkgs.runCommand "starship-init" {} ''${pkgs.starship}/bin/starship init bash > $out'';
-  };
-
   # ── Shell tool packages ───────────────────────────────────────────────────
   home.packages = with pkgs; [
     fzf
@@ -238,6 +240,4 @@
     htop
     sysstat
   ];
-
-  
 }

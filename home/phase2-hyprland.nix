@@ -411,116 +411,131 @@
   # ── wlogout ───────────────────────────────────────────────────────────────
   # HyDE-style full-screen power menu: six icon buttons, colors pulled from
   # the same matugen palette as waybar/rofi/mako.
-    programs.wlogout = {
+  programs.wlogout = {
     enable = true;
 
     layout = [
       { label = "lock";      action = "hyprlock";                        text = "Lock";      keybind = "l"; }
       { label = "logout";    action = "hyprctl dispatch exit";          text = "Logout";    keybind = "e"; }
-      { label = "suspend";   action = "hyprlock & sleep 1; systemctl suspend"; text = "Suspend";   keybind = "u"; }
+      { label = "suspend";   action = "systemctl suspend";              text = "Suspend";   keybind = "u"; }
       { label = "shutdown";  action = "systemctl poweroff";             text = "Shutdown";  keybind = "s"; }
       { label = "hibernate"; action = "systemctl hibernate";            text = "Hibernate"; keybind = "h"; }
       { label = "reboot";    action = "systemctl reboot";               text = "Reboot";    keybind = "r"; }
     ];
 
-        style = ''
+    style = ''
       @import "${config.home.homeDirectory}/.config/wlogout/colors.css";
 
       * {
         background-image: none;
-        box-shadow: none;
-        text-shadow: none;
         font-family: "JetBrainsMono Nerd Font", monospace;
         font-size: 20px;
       }
 
       window {
-        background-color: alpha(@background, 0.86);
+        /* More opaque so it feels like a dedicated screen */
+        background-color: alpha(@background, 0.90);
       }
 
+      /* Base button styling: HyDE-style icon tile */
       button {
         color: @foreground;
-        background-color: alpha(@background-alt, 0.92);
+        background-color: @main-bg;
         outline-style: none;
         border: none;
         border-width: 0px;
         background-repeat: no-repeat;
-        background-position: center 36%;
-        background-size: 18%;
+        background-position: center;
+        background-size: 20%;
         border-radius: 0px;
+        box-shadow: none;
+        text-shadow: none;
         min-width: 320px;
         min-height: 220px;
         margin: 18px;
-        padding-top: 120px;
+        /* Use the same gradient animation name HyDE uses */
+        animation: gradient_f 20s ease-in infinite;
         transition: all 0.3s cubic-bezier(.55,0.0,.28,1.682);
       }
 
       button:focus {
-        background-color: alpha(@accent, 0.20);
-        background-size: 23%;
+        background-color: @wb-act-bg;
+        background-size: 30%;
       }
 
       button:hover {
-        background-color: alpha(@accent, 0.30);
-        color: @foreground;
-        background-size: 25%;
-        border-radius: 34px;
+        background-color: @wb-hvr-bg;
+        background-size: 40%;
+        border-radius: 28px;
+        animation: gradient_f 20s ease-in infinite;
       }
 
+      /* Corner/margin choreography, adapted from style_1.css */
       button:hover#lock {
-        border-radius: 34px 34px 0px 34px;
-        margin: 28px 0px 0px 28px;
+        border-radius: 28px;
+        margin: 26px 0px 26px 26px;
       }
 
       button:hover#logout {
-        border-radius: 34px 0px 34px 34px;
-        margin: 0px 0px 28px 28px;
+        border-radius: 28px;
+        margin: 26px 0px 26px 0px;
+      }
+
+      button:hover#suspend {
+        border-radius: 28px;
+        margin: 26px 0px 26px 0px;
       }
 
       button:hover#shutdown {
-        border-radius: 34px 34px 34px 0px;
-        margin: 28px 28px 0px 0px;
+        border-radius: 28px;
+        margin: 26px 0px 26px 0px;
+      }
+
+      button:hover#hibernate {
+        border-radius: 28px;
+        margin: 26px 0px 26px 0px;
       }
 
       button:hover#reboot {
-        border-radius: 0px 34px 34px 34px;
-        margin: 0px 28px 28px 0px;
+        border-radius: 28px;
+        margin: 26px 26px 26px 0px;
       }
 
+      /* Icon assignments — Papirus SVGs scale cleanly on 4K */
       #lock {
         background-image: image(url("${pkgs.papirus-icon-theme}/share/icons/Papirus-Dark/24x24/actions/system-lock-screen.svg"));
-        border-radius: 22px 0px 0px 0px;
-        margin: 18px 0px 0px 18px;
+        border-radius: 22px 0px 0px 22px;
+        margin: 18px 0px 18px 18px;
       }
 
       #logout {
         background-image: image(url("${pkgs.papirus-icon-theme}/share/icons/Papirus-Dark/24x24/actions/system-log-out.svg"));
-        border-radius: 0px 0px 0px 22px;
-        margin: 0px 0px 18px 18px;
-      }
-
-      #shutdown {
-        background-image: image(url("${pkgs.papirus-icon-theme}/share/icons/Papirus-Dark/24x24/actions/system-shutdown.svg"));
-        border-radius: 0px 22px 0px 0px;
-        margin: 18px 18px 0px 0px;
-      }
-
-      #reboot {
-        background-image: image(url("${pkgs.papirus-icon-theme}/share/icons/Papirus-Dark/24x24/actions/system-reboot.svg"));
-        border-radius: 0px 0px 22px 0px;
-        margin: 0px 18px 18px 0px;
+        border-radius: 0px 0px 0px 0px;
+        margin: 18px 0px 18px 0px;
       }
 
       #suspend {
         background-image: image(url("${pkgs.papirus-icon-theme}/share/icons/Papirus-Dark/24x24/actions/system-suspend.svg"));
-        border-radius: 22px;
-        margin: 18px;
+        border-radius: 0px 0px 0px 0px;
+        margin: 18px 0px 18px 0px;
+      }
+
+      #shutdown {
+        background-image: image(url("${pkgs.papirus-icon-theme}/share/icons/Papirus-Dark/24x24/actions/system-shutdown.svg"));
+        border-radius: 0px 0px 0px 0px;
+        margin: 18px 0px 18px 0px;
       }
 
       #hibernate {
         background-image: image(url("${pkgs.papirus-icon-theme}/share/icons/Papirus-Dark/24x24/actions/system-suspend-hibernate.svg"));
-        border-radius: 22px;
-        margin: 18px;
+        border-radius: 0px 0px 0px 0px;
+        margin: 18px 0px 18px 0px;
+      }
+
+      #reboot {
+        background-image: image(url("${pkgs.papirus-icon-theme}/share/icons/Papirus-Dark/24x24/actions/system-reboot.svg"));
+        border-radius: 0px 22px 22px 0px;
+        margin: 18px 18px 18px 0px;
       }
 
       button label {
@@ -529,6 +544,7 @@
         font-weight: 700;
       }
 
+      /* 4K scaling: increase tile size and font for high-resolution monitors */
       @media (min-width: 3000px) {
         * {
           font-size: 24px;
@@ -538,33 +554,24 @@
           min-width: 420px;
           min-height: 280px;
           margin: 24px;
-          padding-top: 150px;
-          background-size: 16%;
+          background-size: 18%;
         }
 
         button:hover {
-          background-size: 22%;
-          border-radius: 42px;
-        }
-
-        #lock {
-          margin: 24px 0px 0px 24px;
-        }
-
-        #logout {
-          margin: 0px 0px 24px 24px;
-        }
-
-        #shutdown {
-          margin: 24px 24px 0px 0px;
-        }
-
-        #reboot {
-          margin: 0px 24px 24px 0px;
+          background-size: 26%;
+          border-radius: 34px;
         }
 
         button label {
           font-size: 22px;
+        }
+
+        #lock {
+          margin: 24px 0px 24px 24px;
+        }
+
+        #reboot {
+          margin: 24px 24px 24px 0px;
         }
       }
     '';

@@ -423,99 +423,149 @@
       { label = "reboot";    action = "systemctl reboot";               text = "Reboot";    keybind = "r"; }
     ];
 
-    style = ''
-      * {
-        background-image: none;
-        font-family: "JetBrainsMono Nerd Font", monospace;
-        font-size: 14px;
-      }
-
+        style = ''
       @import "${config.home.homeDirectory}/.config/wlogout/colors.css";
 
+      * {
+        background-image: none;
+        box-shadow: none;
+        text-shadow: none;
+        font-family: "JetBrainsMono Nerd Font", monospace;
+        font-size: 20px;
+      }
+
       window {
-        background-color: transparent;
+        background-color: alpha(@background, 0.86);
       }
 
       button {
         color: @foreground;
-        background-color: alpha(@background-alt, 0.78);
+        background-color: alpha(@background-alt, 0.92);
         outline-style: none;
         border: none;
         border-width: 0px;
         background-repeat: no-repeat;
-        background-position: center;
+        background-position: center 36%;
         background-size: 18%;
         border-radius: 0px;
-        box-shadow: none;
-        text-shadow: none;
-      }
-
-      button:focus {
-        background-color: alpha(@accent, 0.22);
-        background-size: 24%;
-      }
-
-      button:hover {
-        background-color: alpha(@accent, 0.28);
-        background-size: 26%;
-        border-radius: 28px;
+        min-width: 320px;
+        min-height: 220px;
+        margin: 18px;
+        padding-top: 120px;
         transition: all 0.3s cubic-bezier(.55,0.0,.28,1.682);
       }
 
+      button:focus {
+        background-color: alpha(@accent, 0.20);
+        background-size: 23%;
+      }
+
+      button:hover {
+        background-color: alpha(@accent, 0.30);
+        color: @foreground;
+        background-size: 25%;
+        border-radius: 34px;
+      }
+
       button:hover#lock {
-        border-radius: 28px 28px 0px 28px;
-        margin: 18px 0px 0px 18px;
+        border-radius: 34px 34px 0px 34px;
+        margin: 28px 0px 0px 28px;
       }
 
       button:hover#logout {
-        border-radius: 28px 0px 28px 28px;
-        margin: 0px 0px 18px 18px;
+        border-radius: 34px 0px 34px 34px;
+        margin: 0px 0px 28px 28px;
       }
 
       button:hover#shutdown {
-        border-radius: 28px 28px 28px 0px;
-        margin: 18px 18px 0px 0px;
+        border-radius: 34px 34px 34px 0px;
+        margin: 28px 28px 0px 0px;
       }
 
       button:hover#reboot {
-        border-radius: 0px 28px 28px 28px;
-        margin: 0px 18px 18px 0px;
+        border-radius: 0px 34px 34px 34px;
+        margin: 0px 28px 28px 0px;
       }
 
       #lock {
         background-image: image(url("${pkgs.papirus-icon-theme}/share/icons/Papirus-Dark/24x24/actions/system-lock-screen.svg"));
-        border-radius: 18px 0px 0px 0px;
-        margin: 12px 0px 0px 12px;
+        border-radius: 22px 0px 0px 0px;
+        margin: 18px 0px 0px 18px;
       }
 
       #logout {
         background-image: image(url("${pkgs.papirus-icon-theme}/share/icons/Papirus-Dark/24x24/actions/system-log-out.svg"));
-        border-radius: 0px 0px 0px 18px;
-        margin: 0px 0px 12px 12px;
+        border-radius: 0px 0px 0px 22px;
+        margin: 0px 0px 18px 18px;
       }
 
       #shutdown {
         background-image: image(url("${pkgs.papirus-icon-theme}/share/icons/Papirus-Dark/24x24/actions/system-shutdown.svg"));
-        border-radius: 0px 18px 0px 0px;
-        margin: 12px 12px 0px 0px;
+        border-radius: 0px 22px 0px 0px;
+        margin: 18px 18px 0px 0px;
       }
 
       #reboot {
         background-image: image(url("${pkgs.papirus-icon-theme}/share/icons/Papirus-Dark/24x24/actions/system-reboot.svg"));
-        border-radius: 0px 0px 18px 0px;
-        margin: 0px 12px 12px 0px;
+        border-radius: 0px 0px 22px 0px;
+        margin: 0px 18px 18px 0px;
       }
 
       #suspend {
         background-image: image(url("${pkgs.papirus-icon-theme}/share/icons/Papirus-Dark/24x24/actions/system-suspend.svg"));
-        border-radius: 18px;
-        margin: 12px;
+        border-radius: 22px;
+        margin: 18px;
       }
 
       #hibernate {
         background-image: image(url("${pkgs.papirus-icon-theme}/share/icons/Papirus-Dark/24x24/actions/system-suspend-hibernate.svg"));
-        border-radius: 18px;
-        margin: 12px;
+        border-radius: 22px;
+        margin: 18px;
+      }
+
+      button label {
+        color: @foreground;
+        font-size: 18px;
+        font-weight: 700;
+      }
+
+      @media (min-width: 3000px) {
+        * {
+          font-size: 24px;
+        }
+
+        button {
+          min-width: 420px;
+          min-height: 280px;
+          margin: 24px;
+          padding-top: 150px;
+          background-size: 16%;
+        }
+
+        button:hover {
+          background-size: 22%;
+          border-radius: 42px;
+        }
+
+        #lock {
+          margin: 24px 0px 0px 24px;
+        }
+
+        #logout {
+          margin: 0px 0px 24px 24px;
+        }
+
+        #shutdown {
+          margin: 24px 24px 0px 0px;
+        }
+
+        #reboot {
+          margin: 0px 24px 24px 0px;
+        }
+
+        button label {
+          font-size: 22px;
+        }
       }
     '';
   };

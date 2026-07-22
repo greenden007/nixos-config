@@ -62,14 +62,14 @@ cp -r nixos-config/* /mnt/etc/nixos/
 ### 3. Install
 
 ```bash
-nixos-install --flake /mnt/etc/nixos#ro
+nixos-install --flake /mnt/etc/nixos#lockie
 reboot
 ```
 
 ### 4. Post-boot: activate Home Manager and rebuild
 
 ```bash
-sudo nixos-rebuild switch --flake /etc/nixos#ro
+sudo nixos-rebuild switch --flake /etc/nixos#lockie
 ```
 
 ### 5. Install Flatpak apps
@@ -84,15 +84,15 @@ flatpak install flathub com.spotify.Client
 
 ## Common commands
 
-| Alias | What it does |
-|-------|-------------|
-| `nrs` | nixos-rebuild switch (apply config changes) |
-| `nrt` | nixos-rebuild test (test without making boot default) |
-| `nrb` | nixos-rebuild boot (apply on next boot only) |
-| `nup` | Update flake inputs + rebuild |
-| `ngc` | Garbage collect old generations |
-| `nixedit <file>` | Open a file in /etc/nixos with nvim |
-| `lg` | lazygit |
+| Alias            | What it does                                          |
+| ---------------- | ----------------------------------------------------- |
+| `nrs`            | nixos-rebuild switch (apply config changes)           |
+| `nrt`            | nixos-rebuild test (test without making boot default) |
+| `nrb`            | nixos-rebuild boot (apply on next boot only)          |
+| `nup`            | Update flake inputs + rebuild                         |
+| `ngc`            | Garbage collect old generations                       |
+| `nixedit <file>` | Open a file in /etc/nixos with nvim                   |
+| `lg`             | lazygit                                               |
 
 ---
 

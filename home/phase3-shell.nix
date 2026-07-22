@@ -88,11 +88,11 @@
       lg   = "lazygit";
 
       # ── NixOS shortcuts ─────────────────────────────────────────────────
-      nrs  = "sudo nixos-rebuild switch --flake /etc/nixos#ro";
-      nrt  = "sudo nixos-rebuild test --flake /etc/nixos#ro";
-      nrb  = "sudo nixos-rebuild boot --flake /etc/nixos#ro";
+      nrs  = "sudo nixos-rebuild switch --flake /etc/nixos#lockie";
+      nrt  = "sudo nixos-rebuild test --flake /etc/nixos#lockie";
+      nrb  = "sudo nixos-rebuild boot --flake /etc/nixos#lockie";
       ngc  = "sudo nix-collect-garbage -d";
-      nup  = "sudo nix flake update /etc/nixos && sudo nixos-rebuild switch --flake /etc/nixos#ro";
+      nup  = "sudo nix flake update /etc/nixos && sudo nixos-rebuild switch --flake /etc/nixos#lockie";
 
       # ── System ──────────────────────────────────────────────────────────
       grep  = "grep --color=auto";

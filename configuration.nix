@@ -24,7 +24,7 @@
   services.upower.enable = true;
 
   # ── Locale & time ─────────────────────────────────────────────────────────
-  time.timeZone = "America/Chicago";   # Aurora, IL
+  time.timeZone = "America/Chicago";
   i18n.defaultLocale = "en_US.UTF-8";
 
   # ── Nix settings ──────────────────────────────────────────────────────────

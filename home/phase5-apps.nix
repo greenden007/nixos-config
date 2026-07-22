@@ -142,6 +142,7 @@
         # the opposite direction here.
         quad_dir="$HOME/.cache/hyde"
         quad_tmp="$quad_dir/wall.quad.tmp"
+        mkdir -p "$quad_dir"
         magick "$target" -resize 800x800^ -gravity center -extent 800x800 -alpha set \
           \( -size 800x800 gradient:black-white -rotate 90 \) \
           -compose CopyOpacity -composite "png:$quad_tmp"
